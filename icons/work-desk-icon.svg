@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="나의 업무판">
+  <rect width="1024" height="1024" rx="224" fill="#F5F6F8"/>
+  <rect x="184" y="158" width="656" height="708" rx="164" fill="#FFFFFF"/>
+  <rect x="184" y="158" width="656" height="708" rx="164" fill="none" stroke="#D9DEE8" stroke-width="18"/>
+  <rect x="284" y="282" width="456" height="72" rx="36" fill="#111827"/>
+  <rect x="284" y="426" width="456" height="72" rx="36" fill="#0A84FF"/>
+  <rect x="284" y="570" width="300" height="72" rx="36" fill="#E7F1FF"/>
+  <circle cx="704" cy="606" r="36" fill="#34C759"/>
+  <path d="M686 605l13 13 29-34" fill="none" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
