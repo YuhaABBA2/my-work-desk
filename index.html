@@ -73,6 +73,19 @@
         <div id="marketGrid" class="market-grid"></div>
         <div class="footnote">공식 KAMIS 가격정보 API를 우선 조회하고, 브라우저 제한이나 인증 제한이 있으면 공식 페이지로 안내합니다.</div>
       </article>
+      <article class="card wide investment-card">
+        <div class="card-head">
+          <div><h2>투자 지표 조회</h2><span class="hint">시장 체온 · 수급 · 공시 · 실적 · 거시 지표</span></div>
+          <button id="openMarketDashboard" class="tool">KRX 열기</button>
+        </div>
+        <div class="stock-search">
+          <input id="stockQuery" maxlength="80" placeholder="종목명, 종목코드, 지표 키워드">
+          <button id="searchStock" class="primary">조회 링크 만들기</button>
+        </div>
+        <div id="stockLinks" class="quick-links"></div>
+        <div id="investmentGrid" class="investment-grid"></div>
+        <div class="footnote">공식 원문과 1차 데이터 확인을 우선합니다. 일부 Open API는 인증키가 필요해 공개 페이지로 연결합니다.</div>
+      </article>
       <article class="card wide">
         <div class="calendar-header">
           <div><h2 id="monthLabel"></h2><span class="hint">날짜를 누르면 해당 날짜로 일정이 입력됩니다.</span></div>
