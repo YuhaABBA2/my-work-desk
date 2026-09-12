@@ -31,17 +31,19 @@ function remindBadge(t) {
 
 function taskHTML(t) {
   return `<div class="task ${t.done ? 'done' : ''}">
-    <input class="check" type="checkbox" ${t.done ? 'checked' : ''} data-action="toggle-task" data-id="${esc(t.id)}" style="accent-color:${projectColor(t.project)}">
+    <input class="check" type="checkbox" ${t.done ? 'checked' : ''} data-action="toggle-task" data-id="${esc(t.id)}" style="--c:${projectColor(t.project)}">
     <div class="task-main">
       <div class="task-title">${esc(t.title)}</div>
       <div class="task-meta">${taskMeta(t)}</div>
     </div>
-    ${dueInfo(t)}
-    ${t.seriesId ? '<span class="badge repeat">반복</span>' : ''}
-    ${remindBadge(t)}
-    <span class="badge ${t.priority}">${pri(t.priority)}</span>
-    <button class="edit" data-action="edit-task" data-id="${esc(t.id)}">수정</button>
-    <button class="delete" aria-label="삭제" data-action="remove-task" data-id="${esc(t.id)}">×</button>
+    <div class="task-side">
+      ${dueInfo(t)}
+      ${t.seriesId ? '<span class="badge repeat">반복</span>' : ''}
+      ${remindBadge(t)}
+      <span class="badge ${t.priority}">${pri(t.priority)}</span>
+      <button class="edit" data-action="edit-task" data-id="${esc(t.id)}">수정</button>
+      <button class="delete" aria-label="삭제" data-action="remove-task" data-id="${esc(t.id)}">×</button>
+    </div>
   </div>`;
 }
 
@@ -109,11 +111,12 @@ export function calendar() {
     else if (i >= first + days) { n = i - first - days + 1; dt = new Date(y, m + 1, n); other = true; }
     else { n = i - first + 1; dt = new Date(y, m, n); }
     const dayIso = iso(dt);
-    const list = shown.filter(t => spansDay(t, dayIso)).slice(0, 2);
+    const all = shown.filter(t => spansDay(t, dayIso));
+    const list = all.slice(0, 2);
     const dots = list.map(t => {
       const c = projectColor(t.project);
       return `<span class="dot" style="background:${c}22;color:${c}">${esc(t.title)}</span>`;
-    }).join('');
+    }).join('') + (all.length > 2 ? `<span class="dot more">+${all.length - 2}</span>` : '');
     html += `<button class="day ${other ? 'other' : ''} ${dayIso === iso(today) ? 'today' : ''} ${dayIso === state.selectedDate ? 'selected' : ''}" data-date="${dayIso}"><b>${n}</b>${dots}</button>`;
   }
   $('#calendar').innerHTML = html;
