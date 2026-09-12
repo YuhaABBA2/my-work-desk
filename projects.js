@@ -4,9 +4,9 @@ import { PROJECT_DEFAULTS } from './lib.js';
 // Task 3 에서 Supabase work_projects 로 교체된다.
 function read() {
   try {
-    return JSON.parse(localStorage.getItem('deskProjects') || 'null') ?? PROJECT_DEFAULTS;
+    return JSON.parse(localStorage.getItem('deskProjects') || 'null') ?? [...PROJECT_DEFAULTS];
   } catch (_err) {
-    return PROJECT_DEFAULTS;
+    return [...PROJECT_DEFAULTS];
   }
 }
 function write(v) { localStorage.setItem('deskProjects', JSON.stringify([...new Set(v.filter(Boolean))])); }
