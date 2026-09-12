@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {
   iso, parseIso, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd
+  dueState, shiftEndDate, fmtMd,
+  CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, authorLabel, rpcErrorMessage
 } from '../lib.js';
 
 test('parseIso → iso 왕복', () => {
@@ -130,4 +131,48 @@ test('shiftEndDate: 기간 길이 유지, 종료일 없으면 null', () => {
 test('fmtMd', () => {
   assert.equal(fmtMd('2026-09-04'), '9/4');
   assert.equal(fmtMd('2026-12-25'), '12/25');
+});
+
+test('familyCodeFrom: 6자, 알파벳 내 문자만, 같은 바이트 → 같은 코드', () => {
+  assert.equal(CODE_ALPHABET.length, 32);
+  assert.equal(familyCodeFrom([0, 1, 2, 3, 4, 5]), 'ABCDEF');
+  assert.equal(familyCodeFrom([255, 255, 255, 255, 255, 255]), '999999');
+  assert.equal(familyCodeFrom(new Uint8Array([32, 33, 34, 35, 36, 37, 99, 100])), 'ABCDEF');
+  const c = familyCodeFrom([7, 77, 177, 200, 13, 31]);
+  assert.equal(c.length, 6);
+  assert.ok([...c].every(ch => CODE_ALPHABET.includes(ch)));
+  assert.ok(!/[01OI]/.test(CODE_ALPHABET));
+});
+
+test('isValidFamilyCode', () => {
+  assert.equal(isValidFamilyCode('abc234'), true);
+  assert.equal(isValidFamilyCode(' ABC234 '), true);
+  assert.equal(isValidFamilyCode('ABC23'), false);
+  assert.equal(isValidFamilyCode('ABC-234'), false);
+  assert.equal(isValidFamilyCode(''), false);
+  assert.equal(isValidFamilyCode(null), false);
+});
+
+test('familyIdFor: 가족 일정 + 가족 있음일 때만 id', () => {
+  const fam = { id: 'f1' };
+  assert.equal(familyIdFor('가족 일정', fam), 'f1');
+  assert.equal(familyIdFor('가족 일정', null), null);
+  assert.equal(familyIdFor('개인 일정', fam), null);
+  assert.equal(familyIdFor(null, fam), null);
+});
+
+test('authorLabel: 내 것/가족 아님은 빈 문자열, 남의 가족 업무는 이름, 없으면 가족', () => {
+  const members = [{ userId: 'me', name: '지수' }, { userId: 'w', name: '아내' }];
+  assert.equal(authorLabel({ familyId: null, userId: 'w' }, 'me', members), '');
+  assert.equal(authorLabel({ familyId: 'f1', userId: 'me' }, 'me', members), '');
+  assert.equal(authorLabel({ familyId: 'f1', userId: 'w' }, 'me', members), '아내');
+  assert.equal(authorLabel({ familyId: 'f1', userId: 'gone' }, 'me', members), '가족');
+  assert.equal(authorLabel({ familyId: 'f1', userId: 'w' }, 'me', []), '가족');
+});
+
+test('rpcErrorMessage', () => {
+  assert.equal(rpcErrorMessage({ message: 'CODE_NOT_FOUND' }), '코드를 찾을 수 없습니다.');
+  assert.equal(rpcErrorMessage({ message: 'P0001: ALREADY_MEMBER' }), '이미 가족에 속해 있습니다.');
+  assert.equal(rpcErrorMessage({ message: 'network down' }), 'network down');
+  assert.equal(rpcErrorMessage(null), '요청을 처리하지 못했습니다.');
 });

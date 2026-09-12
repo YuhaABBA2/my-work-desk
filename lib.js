@@ -97,3 +97,33 @@ export function fmtMd(isoStr) {
   const [, m, d] = isoStr.split('-').map(Number);
   return `${m}/${d}`;
 }
+
+// ---- 가족 공유 ----
+// 초대 코드 알파벳: 혼동되는 0 O 1 I 를 뺀 32자. 바이트 하나가 문자 하나로 대응된다(32 = 256/8, 편향 없음).
+export const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+export function familyCodeFrom(bytes) {
+  return Array.from(bytes).slice(0, 6).map(b => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('');
+}
+
+export function isValidFamilyCode(code) {
+  return /^[A-Z0-9]{6}$/.test(String(code || '').trim().toUpperCase());
+}
+
+// 저장 규칙: "가족 일정" 프로젝트이고 내가 가족에 속해 있을 때만 family_id 를 붙인다.
+export function familyIdFor(project, family) {
+  return project === '가족 일정' && family ? family.id : null;
+}
+
+// 가족 업무인데 내가 만든 게 아니면 작성자 이름. 목록에 없으면(나간 사람) "가족".
+export function authorLabel(task, myId, members) {
+  if (!task.familyId || task.userId === myId) return '';
+  return members.find(m => m.userId === task.userId)?.name || '가족';
+}
+
+export function rpcErrorMessage(err) {
+  const m = String(err?.message || '');
+  if (m.includes('CODE_NOT_FOUND')) return '코드를 찾을 수 없습니다.';
+  if (m.includes('ALREADY_MEMBER')) return '이미 가족에 속해 있습니다.';
+  return m || '요청을 처리하지 못했습니다.';
+}

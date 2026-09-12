@@ -8,7 +8,9 @@ export const state = {
   editId: null,
   selectedDate: null,
   projects: [],        // 프로젝트 이름 목록 (Task 3부터 Supabase)
-  projectsReady: false // work_projects 조회 성공 여부
+  projectsReady: false, // work_projects 조회 성공 여부
+  family: null,         // { id, code, ownerId, isAdmin, members: [{ userId, name }] } | null
+  settings: { showMarket: false } // work_settings (계정별)
 };
 
 // 기기별 취향은 localStorage 유지
