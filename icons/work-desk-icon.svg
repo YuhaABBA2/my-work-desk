@@ -1,24 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="업무판 대장간 아이콘">
-  <defs>
-    <linearGradient id="bg" x1="162" y1="116" x2="862" y2="908" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#2A2D34"/>
-      <stop offset="1" stop-color="#101217"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(512 692) rotate(90) scale(300 390)">
-      <stop stop-color="#FFB13B"/>
-      <stop offset=".42" stop-color="#FF6B1A"/>
-      <stop offset="1" stop-color="#FF6B1A" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
-  <circle cx="512" cy="692" r="354" fill="url(#glow)" opacity=".62"/>
-  <path d="M220 690h584c27 0 49 22 49 49s-22 49-49 49H220c-27 0-49-22-49-49s22-49 49-49Z" fill="#FF7A1A" opacity=".88"/>
-  <path d="M278 562h468l-58 96H336l-58-96Z" fill="#D9DEE8"/>
-  <path d="M356 454h312c37 0 70 21 87 54l28 54H241l28-54c17-33 50-54 87-54Z" fill="#F3F5F8"/>
-  <path d="M382 658h260l46 104H336l46-104Z" fill="#AEB7C6"/>
-  <path d="M354 762h316c32 0 58 26 58 58v14H296v-14c0-32 26-58 58-58Z" fill="#818B9B"/>
-  <path d="M654 214l156 156-50 50-156-156 50-50Z" fill="#F3F5F8"/>
-  <path d="M550 269l207 207-54 54-207-207 54-54Z" fill="#AEB7C6"/>
-  <path d="M430 330l124-124c18-18 48-18 66 0l39 39-190 190-39-39c-18-18-18-48 0-66Z" fill="#FFB13B"/>
-  <path d="M255 694c52-36 103-36 155 0s103 36 155 0 103-36 155 0" fill="none" stroke="#FFD08A" stroke-width="24" stroke-linecap="round" opacity=".72"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="우리집 데스크">
+  <rect width="512" height="512" fill="#eaf5ea"/>
+  <ellipse cx="256" cy="460" rx="230" ry="41" fill="#cee8d2"/>
+  <!-- Trunk -->
+  <rect x="228.16" y="317.44" width="55.68" height="122.88" rx="20" ry="20" fill="#8b6b3f"/>
+  <rect x="256.16" y="317.44" width="27.68" height="122.88" rx="17" ry="17" fill="#6e522e"/>
+  <!-- Canopy: three overlapping circles -->
+  <circle cx="181.6"  cy="235.52" r="86.5"  fill="#80c394"/>
+  <circle cx="329.6"  cy="235.52" r="86.5"  fill="#3a9457"/>
+  <circle cx="256"    cy="174.08" r="90"    fill="#226937"/>
+  <!-- Family figures on the grass: adult, child, adult -->
+  <g fill="#ffffff">
+    <!-- Left adult -->
+    <circle cx="174.08" cy="431.5" r="15.7"/>
+    <rect x="153.3" y="453" width="41.6" height="43" rx="14.5"/>
+    <!-- Center child (smaller, slightly lower) -->
+    <circle cx="256"    cy="443"   r="11.2"/>
+    <rect x="240" y="459" width="32" height="30" rx="11"/>
+    <!-- Right adult -->
+    <circle cx="337.92" cy="431.5" r="15.7"/>
+    <rect x="317.1" y="453" width="41.6" height="43" rx="14.5"/>
+  </g>
 </svg>

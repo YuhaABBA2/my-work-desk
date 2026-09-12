@@ -1,14 +1,14 @@
 {
-  "name": "나의 업무판",
-  "short_name": "업무판",
-  "description": "Google 계정으로 동기화되는 개인 업무판",
+  "name": "우리집 데스크",
+  "short_name": "우리집",
+  "description": "가족과 함께 쓰는 일정·업무 데스크",
   "lang": "ko",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f5f6f8",
-  "theme_color": "#f5f6f8",
+  "background_color": "#eaf5ea",
+  "theme_color": "#eaf5ea",
   "icons": [
     {
       "src": "/icons/work-desk-icon-192.png",
