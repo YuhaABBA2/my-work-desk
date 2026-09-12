@@ -70,6 +70,9 @@
 - 월간 캘린더
 - 마감 임박 표시
 - 브라우저 알림 버튼
+- 프로젝트 목록은 Supabase `work_projects`로 동기화 (localStorage에서 1회 이관)
+- 반복 일정은 `series_id`로 묶이며, 수정·삭제 시 "이 일정만 / 이후 모두" 선택 (`<dialog>`)
+- 시간 입력은 5분 단위(`step="300"`)
 
 ### 축산물 시세
 
@@ -115,6 +118,20 @@
 
 현재는 정적 앱에서 안전하게 동작하도록 공식 조회 허브/링크 중심으로 구현되어 있다. 실시간 수치 자체를 앱 내부에 직접 표시하려면 기관별 API 인증키와 서버리스 프록시가 필요하다.
 
+## 2026-09-12 세션에서 알게 된 함정
+
+- Supabase Auth의 Site URL이 옛 배포 스냅샷 주소로 남아 있으면 로그인 후 옛 코드로 튕긴다. Site URL/Redirect URLs는 `https://my-work-desk.vercel.app` 기준.
+- `.overlay{display:grid}`가 `[hidden]`을 덮어써 로그인 후에도 오버레이가 남았던 적이 있다 → `.overlay[hidden]{display:none}` 유지.
+- Chrome 152에서 `<dialog>`의 `close` 이벤트가 오지 않는 경우가 있어 `askSeriesScope`는 form `submit`/`cancel`로 판정한다.
+- iOS Safari의 date/time 입력은 고유 min-width가 있어 `min-width:0` + `appearance:none`이 필요하다.
+
+## 다음 스펙 후보 (사용자 요청 순)
+
+1. 폼/UI 개선: 기간(시작~종료일) 지정, 하루종일 옵션, 반복 "없음"일 때 횟수칸 숨김, 일정별 알림 시점(하루 전/1시간 전) 저장, 프로젝트별 색상(체크박스·캘린더), 고정 프로젝트 3개(회사 업무·개인 일정·가족 일정)
+2. 가족 공유: "가족 일정" 프로젝트만 가족 계정끼리 공유. 투자·시세·투자지표 패널은 본인에게만. RLS 재설계 필요
+3. 푸시 알림 발송: 저장된 알림 시점에 폰에서 울리게 (Web Push + 크론)
+4. 축산 시세 수치화: `livestock_price` + 한우 크론(pig-farm-log), `pig_price` 읽기. 육계·계란은 산지가 API가 없어 2단계
+
 ## 최근 커밋
 
 - `d8d91b6 feat: add investment indicator hub`
@@ -145,7 +162,15 @@
 
 - `index.html`: 루트 앱 화면
 - `cloud.html`: 루트로 리다이렉트
-- `app.js`: Supabase 연동, 업무/일정/축산물/투자 지표 로직
+- `app.js`: 진입점 (ES module). 이벤트 바인딩과 `start()`
+- `lib.js`: DOM/Supabase 의존 없는 순수 함수. `npm test`(`tests/lib.test.mjs`)로 검증
+- `state.js`: 공유 상태와 localStorage 설정(다크모드, 완료 숨김)
+- `supabase.js`: Supabase 클라이언트 (publishable key만)
+- `ui.js`: 화면 그리기, 폼, 시리즈 선택 dialog(`askSeriesScope`)
+- `tasks.js`: `work_tasks` CRUD, 반복 생성(series_id), "이 일정만/이후 모두"
+- `projects.js`: `work_projects` CRUD, localStorage → Supabase 1회 이관
+- `market.js`: 축산 시세 자리표시자 + 투자 링크
+- `package.json`: `"type": "module"`, `npm test`. 빌드 없음 (Vercel Framework Preset: Other)
 - `styles.css`: 전체 UI 스타일과 다크모드
 - `site.webmanifest`: PWA 설정
 - `icons/`: 홈 화면 아이콘
@@ -156,8 +181,6 @@
 
 - 투자 지표를 실제 수치 카드로 확장할 경우 서버리스 API 프록시 설계
 - KRX/KOSIS/ECOS/DART Open API 키를 안전하게 다룰 환경 변수 구조 추가
-- 반복 일정의 개별 수정/전체 수정 옵션 추가
-- 프로젝트/카테고리도 Supabase 테이블로 분리해 기기 간 동기화
 - 축산물 시세도 공식 API 키 기반으로 안정화
 - 모바일 캘린더 주간 뷰를 더 촘촘하게 개선
 
