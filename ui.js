@@ -51,9 +51,6 @@ function taskHTML(t) {
 
 export function render() {
   document.documentElement.classList.toggle('dark', settings.dark);
-  $('#toggleDone').textContent = settings.hideDone ? '완료 보이기' : '완료 숨기기';
-  $('#darkMode').textContent = settings.dark ? '라이트모드' : '다크모드';
-
   const td = iso(today);
   const open = state.tasks.filter(t => !t.done);
   const done = state.tasks.filter(t => t.done);
@@ -81,6 +78,16 @@ export function setFamilyStatus(msg) {
   if (el) el.textContent = msg || '';
 }
 
+function memberAvatar(m) {
+  const initial = esc((m.name || '?').trim()[0] || '?').toUpperCase();
+  // 내가 나인 경우 Google 프로필 사진을 우선. 다른 구성원은 이름 첫 글자.
+  if (m.userId === state.user?.id) {
+    const pic = state.user.user_metadata?.avatar_url || state.user.user_metadata?.picture;
+    if (pic) return `<img class="avatar avatar-sm" src="${esc(pic)}" alt="" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'avatar avatar-sm',textContent:'${initial}'}))">`;
+  }
+  return `<span class="avatar avatar-sm">${initial}</span>`;
+}
+
 export function renderFamily() {
   const box = $('#familyBody');
   const f = state.family;
@@ -92,11 +99,11 @@ export function renderFamily() {
   }
   const me = f.members.find(m => m.userId === state.user.id);
   box.innerHTML = `<ul class="members">${f.members.map(m =>
-    `<li><i class="dot-color" style="background:#f0730a"></i>${esc(m.name)}${m.userId === f.ownerId ? ' <span class="badge repeat">가장</span>' : ''}${m.userId === state.user.id ? ' <span class="hint">(나)</span>' : ''}</li>`
+    `<li>${memberAvatar(m)}<span class="m-name">${esc(m.name)}</span>${m.userId === f.ownerId ? ' <span class="badge repeat">가장</span>' : ''}${m.userId === state.user.id ? ' <span class="hint">(나)</span>' : ''}</li>`
   ).join('')}</ul>
     <div class="project-add"><input id="myName" maxlength="30" value="${esc(me?.name || '')}" placeholder="내 표시 이름"><button id="renameMe" class="tool">저장</button></div>
     ${f.isAdmin
-      ? `<div class="code-line">초대 코드 <b class="code">${esc(f.code)}</b><button id="regenCode" class="text-button">재발급</button></div>`
+      ? `<div class="code-line">초대 코드 <b class="code">${esc(f.code)}</b><button id="regenCode" class="text-button">재발급</button><button id="shareCode" class="text-button">공유</button></div>`
       : `<button id="leaveFamily" class="text-button">가족 나가기</button>`}`;
 }
 
@@ -236,6 +243,39 @@ export function fillEditForm(t) {
 }
 
 // 업무 폼 다이얼로그. mode='add' 는 폼 초기화, 'edit' 는 fillEditForm 이 먼저 채웠다고 가정.
+// 헤더의 프로필 버튼 (아바타 + 이름). 클릭하면 설정 다이얼로그.
+export function renderProfile() {
+  const u = state.user;
+  const md = u?.user_metadata || {};
+  const pic = md.avatar_url || md.picture || '';
+  const name = md.full_name || md.name || (u?.email?.split('@')[0]) || '나';
+  const initial = (name.trim()[0] || '?').toUpperCase();
+  const avatar = pic
+    ? `<img src="${esc(pic)}" alt="" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${esc(initial)}'}))">`
+    : esc(initial);
+  const setEl = (id, html) => { const el = $(id); if (el) el.innerHTML = html; };
+  setEl('#profileAvatar', avatar);
+  setEl('#settingsAvatar', avatar);
+  const setText = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+  setText('#profileName', name);
+  setText('#settingsName', name);
+  setText('#settingsEmail', u?.email || '');
+}
+
+export function openSettingsDialog() {
+  // Refresh checkboxes from live state each open
+  $('#setHideDone').checked = !!settings.hideDone;
+  $('#setDark').checked = !!settings.dark;
+  $('#setMarket').checked = !!state.settings.showMarket;
+  const canSeeMarket = !state.family || state.family.isAdmin;
+  $('#setMarketRow').hidden = !canSeeMarket;
+  $('#settingsDialog').showModal();
+}
+export function closeSettingsDialog() {
+  const d = $('#settingsDialog');
+  if (d.open) d.close();
+}
+
 export function openTaskDialog(mode = 'add') {
   if (mode === 'add') resetForm();
   $('#taskDialog').showModal();

@@ -16,11 +16,13 @@
 <body>
   <div id="loginOverlay" class="overlay">
     <section class="login">
+      <img class="login-icon" src="/icons/work-desk-icon.svg" alt="" width="112" height="112">
       <div class="eyebrow">HOME DESK</div>
       <h1>우리집 데스크</h1>
-      <p>Google 계정으로 로그인하면 우리 가족 일정이 함께 정리되고, 모든 기기에서 이어집니다.</p>
-      <button id="googleLogin" class="google">Google로 계속하기</button>
+      <p class="login-lead">가족과 함께 오늘 하루를 정리합니다.<br>Google 계정으로 로그인하면 모든 기기에서 이어집니다.</p>
+      <button id="googleLogin" class="google"><span class="g-mark">G</span>Google로 계속하기</button>
       <div id="notice" class="notice"></div>
+      <p class="login-hint">가족의 초대 코드를 받으셨다면, 로그인 뒤 "가족" 카드에서 입력하세요.</p>
     </section>
   </div>
   <main id="app" class="app" hidden>
@@ -28,15 +30,12 @@
       <div><div class="eyebrow">HOME DESK</div><h1>우리집 데스크</h1></div>
       <div class="topRight">
         <div id="todayLabel" class="date"></div>
-        <div class="userLine"><span id="userName" class="user"></span><button id="logout" class="logout">로그아웃</button></div>
+        <button id="profileBtn" class="profile-btn" aria-label="내 계정 및 설정">
+          <span id="profileAvatar" class="avatar">?</span>
+          <span id="profileName" class="profile-name"></span>
+        </button>
       </div>
     </header>
-    <section class="toolbar">
-      <button id="toggleDone" class="tool">완료 숨기기</button>
-      <button id="darkMode" class="tool">다크모드</button>
-      <button id="notifyDue" class="tool">마감 알림</button>
-      <button id="toggleMarket" class="tool" hidden>시세·투자 보기</button>
-    </section>
     <section class="grid">
       <article class="card hero-card">
         <div class="card-head">
@@ -123,6 +122,29 @@
           <textarea id="note" maxlength="1000" placeholder="메모 (선택)"></textarea>
           <button id="submitTask" class="primary">추가하기</button>
         </form>
+    </div>
+  </dialog>
+  <dialog id="settingsDialog" class="settings-dialog">
+    <div class="settings-body">
+      <div class="settings-head">
+        <span id="settingsAvatar" class="avatar avatar-lg">?</span>
+        <div class="settings-who"><b id="settingsName">-</b><span id="settingsEmail" class="hint">-</span></div>
+        <button id="closeSettings" type="button" class="text-button">닫기</button>
+      </div>
+      <div class="settings-section">
+        <h3>화면</h3>
+        <label class="settings-row"><span>완료한 일 숨기기</span><input id="setHideDone" type="checkbox"></label>
+        <label class="settings-row"><span>다크모드</span><input id="setDark" type="checkbox"></label>
+        <label class="settings-row" id="setMarketRow" hidden><span>시세·투자 패널 보기</span><input id="setMarket" type="checkbox"></label>
+      </div>
+      <div class="settings-section">
+        <h3>알림</h3>
+        <div class="settings-row"><span id="pushStateLabel">이 기기의 마감 알림</span><button id="pushToggleBtn" class="tool">알림 켜기</button></div>
+        <p class="hint">알림을 켜면 업무별로 저장한 "1시간 전"·"하루 전" 시점에 이 기기로 알림이 옵니다.</p>
+      </div>
+      <div class="settings-section">
+        <button id="logoutBtn" class="text-button">로그아웃</button>
+      </div>
     </div>
   </dialog>
   <dialog id="seriesDialog" class="series-dialog">

@@ -1,7 +1,7 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
 import { iso, isValidFamilyCode, rpcErrorMessage } from './lib.js';
-import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog } from './ui.js';
+import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
@@ -74,7 +74,7 @@ async function start() {
   if (started) return;
   started = true;
   state.user = session.user;
-  $('#userName').textContent = state.user.email || '로그인됨';
+  renderProfile();
   $('#loginOverlay').hidden = true;
   $('#app').hidden = false;
   const projErr = await loadProjects();
@@ -96,14 +96,15 @@ async function start() {
 
 
 async function refreshPushLabel() {
-  const btn = $('#notifyDue');
+  const btn = $('#pushToggleBtn');
+  const lbl = $('#pushStateLabel');
   if (!btn) return;
   const st = await getPushState();
-  if (!st.supported) { btn.textContent = '알림 미지원'; btn.disabled = true; return; }
-  if (st.permission === 'denied') { btn.textContent = '알림 차단됨'; btn.disabled = true; btn.title = '브라우저 설정에서 알림 허용을 다시 켜 주세요.'; return; }
+  if (!st.supported) { btn.textContent = '지원 안 함'; btn.disabled = true; if (lbl) lbl.textContent = '이 브라우저는 푸시 알림을 지원하지 않습니다.'; return; }
+  if (st.permission === 'denied') { btn.textContent = '차단됨'; btn.disabled = true; if (lbl) lbl.textContent = '브라우저 설정에서 알림 허용을 다시 켜 주세요.'; return; }
   btn.disabled = false;
-  btn.textContent = st.subscribed ? '알림 켜짐' : '알림 켜기';
-  btn.title = st.subscribed ? '누르면 알림을 끕니다.' : '누르면 이 기기로 마감 알림을 받습니다.';
+  btn.textContent = st.subscribed ? '알림 끄기' : '알림 켜기';
+  if (lbl) lbl.textContent = st.subscribed ? '이 기기의 마감 알림 · 켜져 있음' : '이 기기의 마감 알림 · 꺼져 있음';
 }
 
 async function onNotifyToggle() {
@@ -126,7 +127,34 @@ $('#googleLogin').onclick = async () => {
   const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href } });
   if (error) $('#notice').textContent = '로그인을 시작하지 못했습니다. Google 로그인이 활성화됐는지 확인해 주세요.';
 };
-$('#logout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+// 프로필 버튼(=계정/설정)
+$('#profileBtn').onclick = () => { refreshPushLabel(); openSettingsDialog(); };
+$('#closeSettings').onclick = closeSettingsDialog;
+$('#logoutBtn').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+// 설정 다이얼로그의 토글들
+$('#setHideDone').addEventListener('change', e => { settings.hideDone = e.target.checked; render(); });
+$('#setDark').addEventListener('change', e => { settings.dark = e.target.checked; render(); });
+$('#setMarket').addEventListener('change', async e => {
+  const err = await setShowMarket(e.target.checked);
+  if (err) { alert(err.message || '설정을 저장하지 못했습니다.'); e.target.checked = !e.target.checked; return; }
+  applyMarketVisibility();
+  if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); }
+});
+$('#pushToggleBtn').onclick = async () => { await onNotifyToggle(); };
+// 가족 코드 공유 (초대 카드에서 delegated)
+$('#familyBody').addEventListener('click', async (e) => {
+  if (e.target.id !== 'shareCode') return;
+  const code = state.family?.code; if (!code) return;
+  const msg = `우리집 데스크에 초대합니다.
+1) https://my-work-desk.vercel.app 을 열어 Google 로그인
+2) 아래 코드를 "가족" 카드에서 입력
+
+초대 코드: ${code}`;
+  try {
+    if (navigator.share) await navigator.share({ title: '우리집 데스크 가족 초대', text: msg });
+    else { await navigator.clipboard.writeText(msg); alert('초대 메시지를 복사했습니다. 카톡 등으로 붙여넣으세요.'); }
+  } catch (_) { /* 사용자 취소 */ }
+});
 $('#addForm').addEventListener('submit', saveTask);
 $('#todayTasks').addEventListener('click', handleTaskAction);
 $('#todayTasks').addEventListener('change', handleTaskAction);
@@ -145,9 +173,6 @@ $('#project').addEventListener('change', syncShareFamilyForProject);
 $('#prev').onclick = () => { state.view.setMonth(state.view.getMonth() - 1); calendar(); };
 $('#next').onclick = () => { state.view.setMonth(state.view.getMonth() + 1); calendar(); };
 $('#thisMonth').onclick = () => { state.view = new Date(today.getFullYear(), today.getMonth(), 1); state.selectedDate = iso(today); $('#date').value = state.selectedDate; calendar(); };
-$('#toggleDone').onclick = () => { settings.hideDone = !settings.hideDone; render(); };
-$('#darkMode').onclick = () => { settings.dark = !settings.dark; render(); };
-$('#notifyDue').onclick = onNotifyToggle;
 $('#addProject').onclick = onAddProject;
 $('#familyBody').addEventListener('click', handleFamilyAction);
 $('#familyBody').addEventListener('keydown', e => {
