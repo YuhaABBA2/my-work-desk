@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS } from './lib.js';
 import { today, state, settings } from './state.js';
 
 export const $ = (s) => document.querySelector(s);
@@ -58,10 +58,11 @@ export function setProjectStatus(msg) {
 
 export function renderProjects() {
   const favorites = state.projects;
-  const fromTasks = [...new Set(state.tasks.map(t => t.project || '미분류'))];
-  const allProjects = [...new Set([...favorites, ...fromTasks])];
-  $('#projects').innerHTML = allProjects.map(p => `<option value="${esc(p)}">`).join('');
-  $('#projectChips').innerHTML = favorites.map(p => `<span class="chip">${esc(p)} <button data-action="delete-project" data-project="${esc(p)}">×</button></span>`).join('');
+  const dot = (p) => `<i class="dot-color" style="background:${projectColor(p)}"></i>`;
+  $('#projectChips').innerHTML = favorites.map(p => {
+    const fixed = FIXED_PROJECTS.includes(p);
+    return `<span class="chip ${fixed ? 'fixed' : ''}">${dot(p)}${esc(p)}${fixed ? '' : ` <button data-action="delete-project" data-project="${esc(p)}">×</button>`}</span>`;
+  }).join('');
 
   const ongoing = state.tasks.filter(t => !t.done);
   const groups = {};
@@ -69,7 +70,8 @@ export function renderProjects() {
   $('#projectsView').innerHTML = Object.entries(groups).map(([p, items]) => {
     const all = state.tasks.filter(t => (t.project || '미분류') === p);
     const pct = Math.round((all.length - items.length) / all.length * 100);
-    return `<div class="project"><div class="project-line"><span>${esc(p)}</span><span class="hint">${items.length}건 남음</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+    const color = projectColor(p === '미분류' ? null : p);
+    return `<div class="project"><div class="project-line"><span>${dot(p === '미분류' ? null : p)}${esc(p)}</span><span class="hint">${items.length}건 남음</span></div><div class="bar"><i style="width:${pct}%;background:${color}"></i></div></div>`;
   }).join('') || '<div class="empty">프로젝트별 업무를 등록해 보세요.</div>';
 }
 

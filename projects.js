@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { state } from './state.js';
-import { PROJECT_DEFAULTS, mergeProjectNames } from './lib.js';
+import { PROJECT_DEFAULTS, FIXED_PROJECTS, mergeProjectNames, sortProjects } from './lib.js';
 
 const LOCAL_KEY = 'deskProjects';
 
@@ -14,7 +14,7 @@ export async function loadProjects() {
     state.projectsReady = false;
     return error;
   }
-  state.projects = data.map(p => p.name);
+  state.projects = sortProjects(data.map(p => p.name));
   state.projectsReady = true;
   return null;
 }
@@ -43,6 +43,20 @@ export async function migrateLocalProjects() {
   return null;
 }
 
+// 고정 프로젝트(회사 업무·개인 일정·가족 일정)가 없으면 만든다. 이미 있으면 건드리지 않는다.
+// 호출 전제: loadProjects() 성공, migrateLocalProjects() 이후 (이관 판정을 방해하지 않게).
+export async function ensureFixedProjects() {
+  if (!state.projectsReady) return null;
+  const missing = FIXED_PROJECTS.filter(n => !state.projects.includes(n));
+  if (!missing.length) return null;
+  const { error } = await sb.from('work_projects').upsert(
+    missing.map(name => ({ user_id: state.user.id, name, sort_order: FIXED_PROJECTS.indexOf(name) })),
+    { onConflict: 'user_id,name', ignoreDuplicates: true }
+  );
+  if (error) return error;
+  return loadProjects();
+}
+
 export async function addProject(name) {
   name = name.trim();
   if (!name) return null;
@@ -55,6 +69,7 @@ export async function addProject(name) {
 }
 
 export async function deleteProject(name) {
+  if (FIXED_PROJECTS.includes(name)) return new Error('기본 프로젝트는 삭제할 수 없습니다.');
   const { error } = await sb.from('work_projects').delete().eq('name', name);
   if (error) return error;
   return loadProjects();

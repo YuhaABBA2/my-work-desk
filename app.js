@@ -3,7 +3,7 @@ import { state, settings, today } from './state.js';
 import { iso } from './lib.js';
 import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask, notifyDue } from './tasks.js';
-import { loadProjects, addProject, deleteProject, migrateLocalProjects } from './projects.js';
+import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
 
 async function handleTaskAction(e) {
@@ -16,7 +16,7 @@ async function handleTaskAction(e) {
   if (action === 'remove-task') await removeTask(e.target.dataset.id);
   if (action === 'delete-project') {
     const err = await deleteProject(e.target.dataset.project);
-    if (err) return alert('프로젝트를 삭제하지 못했습니다.');
+    if (err) return alert(err.message || '프로젝트를 삭제하지 못했습니다.');
     renderProjects();
   }
 }
@@ -47,6 +47,8 @@ async function start() {
   await load();
   const migErr = await migrateLocalProjects();
   if (migErr) setProjectStatus('프로젝트 목록을 옮기지 못했습니다. 새로고침 후 다시 시도해 주세요.');
+  const fixErr = await ensureFixedProjects();
+  if (fixErr) setProjectStatus('기본 프로젝트를 만들지 못했습니다. 새로고침 후 다시 시도해 주세요.');
   renderProjects();
   renderInvestment();
   loadMarket();
