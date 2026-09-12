@@ -156,6 +156,21 @@
       </div>
     </div>
   </dialog>
+  <dialog id="dayDialog" class="day-dialog">
+    <div class="day-dialog-body">
+      <div class="day-dialog-head">
+        <div class="day-dialog-title">
+          <b id="dayDialogDate">-</b>
+          <span id="dayDialogSub" class="hint"></span>
+        </div>
+        <div class="day-dialog-actions">
+          <button id="dayDialogAdd" type="button" class="tool" aria-label="이 날짜에 추가">＋</button>
+          <button id="dayDialogClose" type="button" class="text-button" aria-label="닫기">×</button>
+        </div>
+      </div>
+      <div id="dayDialogList" class="day-tasks"></div>
+    </div>
+  </dialog>
   <dialog id="seriesDialog" class="series-dialog">
     <form method="dialog">
       <h3 id="seriesDialogTitle">반복 일정 수정</h3>

@@ -349,6 +349,63 @@ export function closeSettingsDialog() {
   if (d.open) d.close();
 }
 
+
+function userAvatarFor(userId, name) {
+  const initial = esc((name || '?').trim()[0] || '?').toUpperCase();
+  if (userId === state.user?.id) {
+    const pic = state.user.user_metadata?.avatar_url || state.user.user_metadata?.picture;
+    if (pic) return `<img class="avatar avatar-sm" src="${esc(pic)}" alt="" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'avatar avatar-sm',textContent:'${initial}'}))">`;
+  }
+  return `<span class="avatar avatar-sm">${initial}</span>`;
+}
+
+export function openDayDialog(dateIso) {
+  const d = parseIsoLocal(dateIso);
+  const weekday = d.toLocaleDateString('ko-KR', { weekday: 'long' });
+  $('#dayDialogDate').textContent = `${d.getMonth() + 1}월 ${d.getDate()}일 ${weekday}`;
+  let lunar = '';
+  try {
+    const parts = new Intl.DateTimeFormat('ko-u-ca-chinese', { month: 'numeric', day: 'numeric' }).formatToParts(d);
+    const M = parts.find(p => p.type === 'month')?.value || '';
+    const D = parts.find(p => p.type === 'day')?.value || '';
+    if (M && D) lunar = `음력 ${M}.${D}`;
+  } catch (_) {}
+  $('#dayDialogSub').textContent = lunar;
+
+  const list = visibleTasks().filter(t => spansDay(t, dateIso)).sort((a, b) => {
+    const at = a.time || '99:99', bt = b.time || '99:99';
+    if (at !== bt) return at.localeCompare(bt);
+    return sortTasks(a, b);
+  });
+  const members = state.family?.members || [];
+  const items = list.map(t => {
+    const memberName = members.find(m => m.userId === t.userId)?.name;
+    const authorName = (t.userId === state.user?.id)
+      ? (state.user.user_metadata?.full_name || state.user.user_metadata?.name || '나')
+      : (memberName || '가족');
+    const when = t.time ? esc(t.time) : '종일';
+    const c = projectColor(t.project);
+    return `<button class="day-task${t.done ? ' done' : ''}" data-task-id="${esc(t.id)}">
+      <span class="dt-when">${when}</span>
+      <span class="dt-bar" style="background:${c}"></span>
+      <span class="dt-title">${esc(t.title)}</span>
+      ${userAvatarFor(t.userId, authorName)}
+    </button>`;
+  }).join('');
+  $('#dayDialogList').innerHTML = items || '<div class="empty">이 날엔 등록된 업무가 없습니다.</div>';
+  $('#dayDialog').showModal();
+}
+
+export function closeDayDialog() {
+  const d = $('#dayDialog');
+  if (d.open) d.close();
+}
+
+function parseIsoLocal(s) {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 export function openTaskDialog(mode = 'add') {
   if (mode === 'add') resetForm();
   $('#taskDialog').showModal();
@@ -364,9 +421,7 @@ export function closeTaskDialog() {
 export function selectDate(date) {
   state.selectedDate = date;
   calendar();
-  openTaskDialog('add');
-  $('#date').value = date;
-  $('#title').focus();
+  openDayDialog(date);
 }
 
 // 시리즈 일정 수정/삭제 범위. 취소·Esc 는 null.

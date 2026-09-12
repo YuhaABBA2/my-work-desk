@@ -1,7 +1,7 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
 import { iso, isValidFamilyCode, rpcErrorMessage } from './lib.js';
-import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile } from './ui.js';
+import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
@@ -182,5 +182,19 @@ $('#refreshMarket').onclick = loadMarket;
 $('#openMarketDashboard').onclick = () => window.open('https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd?vsView=Y', '_blank', 'noopener');
 $('#searchStock').onclick = renderStockLinks;
 $('#stockQuery').addEventListener('keydown', e => { if (e.key === 'Enter') renderStockLinks(); });
+$('#dayDialogClose').onclick = closeDayDialog;
+$('#dayDialogAdd').onclick = () => {
+  const iso = state.selectedDate;
+  closeDayDialog();
+  openTaskDialog('add');
+  if (iso) $('#date').value = iso;
+  $('#title').focus();
+};
+$('#dayDialogList').addEventListener('click', (e) => {
+  const btn = e.target.closest('.day-task');
+  if (!btn) return;
+  closeDayDialog();
+  editTask(btn.dataset.taskId);
+});
 sb.auth.onAuthStateChange((_event, session) => { if (session && !state.user) start(); });
 start();
