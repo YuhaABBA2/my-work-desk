@@ -91,7 +91,7 @@ export function renderProjects() {
   }).join('') || '<div class="empty">프로젝트별 업무를 등록해 보세요.</div>';
 
   const cur = $('#project').value;
-  renderProjectOptions(state.editId ? (cur || null) : (cur || undefined));
+  renderProjectOptions(state.editId ? (cur || null) : (state.projects.includes(cur) ? cur : undefined));
 }
 
 export function calendar() {

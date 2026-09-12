@@ -19,7 +19,7 @@ export async function loadProjects() {
   return null;
 }
 
-// 첫 로그인 1회: work_projects 가 비어 있으면 localStorage 목록(없으면 기본 4개) + 업무에 쓰인 이름을 넣는다.
+// 첫 로그인 1회: work_projects 가 비어 있으면 localStorage 목록(없으면 고정 3개) + 업무에 쓰인 이름을 넣는다.
 // 호출 전제: loadProjects() 성공, load() 로 state.tasks 채워짐.
 export async function migrateLocalProjects() {
   if (!state.projectsReady) return null;

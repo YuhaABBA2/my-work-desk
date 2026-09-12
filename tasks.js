@@ -25,14 +25,16 @@ export async function load() {
 
 function readForm() {
   const allDay = $('#allDay').checked;
+  // 시간이 비어 있으면 체크 여부와 무관하게 하루종일이다. 하루종일이면 "1시간 전"은 의미가 없다.
+  const task_time = allDay ? null : ($('#time').value || null);
   return {
     title: $('#title').value.trim(),
     task_date: $('#date').value,
     end_date: $('#endDate').value || null,
     priority: $('#priority').value,
     project: $('#project').value || null,
-    task_time: allDay ? null : ($('#time').value || null),
-    remind_1h: allDay ? false : $('#remind1h').checked,
+    task_time,
+    remind_1h: task_time ? $('#remind1h').checked : false,
     remind_1d: $('#remind1d').checked,
     note: $('#note').value.trim() || null,
     updated_at: new Date().toISOString()
