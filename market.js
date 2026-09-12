@@ -90,27 +90,87 @@ export function renderStockLinks() {
   box.innerHTML = STOCK_LINKS.map(link => `<a href="${link.url(query)}" target="_blank" rel="noreferrer">${esc(link.label)}</a>`).join('');
 }
 
+// 돼지 시세: Supabase pig_price 를 직접 읽는다(가족 이용자 인증 필요 없음 — RLS 는 authenticated 에게 select 허용).
+// 한우/산란/육계는 아직 데이터 소스가 없어 공식 페이지 링크로 남긴다.
 export async function loadMarket() {
   const status = $('#marketStatus');
   const grid = $('#marketGrid');
-  const names = ['양돈', '한우', '산란', '육계'];
   status.textContent = '축산물 시세를 조회하는 중입니다.';
-  grid.innerHTML = names.map(n => marketCard(n, null)).join('');
+  grid.innerHTML = skeleton(['양돈', '한우', '산란', '육계']);
   try {
-    const url = 'https://www.kamis.or.kr/service/price/xml.do?action=dailyPriceByCategoryList&p_cert_key=TEST&p_cert_id=TEST&p_returntype=json&p_product_cls_code=01&p_item_category_code=200';
-    const res = await fetch(url);
-    const json = await res.json();
-    const rows = Array.isArray(json.data) ? json.data.filter(x => typeof x === 'object') : [];
-    status.innerHTML = rows.length ? 'KAMIS 축산물 가격정보를 불러왔습니다.' : 'KAMIS 테스트 키 응답에 상세 품목이 없어 공식 페이지 확인이 필요합니다. <a class="source-link" href="https://www.kamis.or.kr/customer/reference/openapi_list.do" target="_blank" rel="noreferrer">KAMIS Open API</a>';
-    grid.innerHTML = names.map(n => marketCard(n, rows.find(r => JSON.stringify(r).includes(n)))).join('');
+    const { sb } = await import('./supabase.js');
+    // 1년치 조금 넘게 — 전년 대비 계산 여유.
+    const yearAgo = new Date(Date.now() - 380 * 86400000).toISOString().slice(0, 10);
+    const { data, error } = await sb.from('pig_price')
+      .select('price_date,price_per_kg')
+      .eq('grade', 'excl_utility')
+      .gte('price_date', yearAgo)
+      .order('price_date', { ascending: true });
+    if (error) throw error;
+    const pig = pigCard(data || []);
+    status.innerHTML = pig.status;
+    grid.innerHTML = [pig.html, linkCard('한우', 'https://www.ekapepia.com/v3/price/livestock/cow/producer.do', '축산유통정보 다봄'),
+      linkCard('산란', 'https://www.ekapepia.com/supPrice/liveStock/distrPrice/sanji/hen.do', '양계협회 산지시세'),
+      linkCard('육계', 'https://www.ekapepia.com/supPrice/liveStock/distrPrice/sanji/broilerchicken.do', '육계협회 산지시세')].join('');
   } catch (err) {
-    status.innerHTML = `브라우저에서 KAMIS 조회가 제한됐습니다. <a class="source-link" href="https://www.kamis.or.kr/customer/price/wholesale/item.do" target="_blank" rel="noreferrer">공식 가격정보 보기</a>`;
-    grid.innerHTML = names.map(n => marketCard(n, null)).join('');
+    status.innerHTML = `시세를 불러오지 못했습니다. <a class="source-link" href="https://www.ekapepia.com" target="_blank" rel="noreferrer">축산유통정보</a>`;
+    grid.innerHTML = ['양돈','한우','산란','육계'].map(n => linkCard(n, 'https://www.ekapepia.com', '축산유통정보')).join('');
   }
 }
 
-function marketCard(name, row) {
-  const text = row ? JSON.stringify(row) : '공식 데이터 연결 필요';
-  const bars = [35, 52, 44, 63, 57, 70].map(v => `<i style="height:${v}%"></i>`).join('');
-  return `<div class="market-item"><b>${name}</b><span>${esc(text).slice(0, 80)}</span><div class="spark">${bars}</div></div>`;
+function skeleton(names) {
+  return names.map(n => `<div class="market-item"><b>${esc(n)}</b><span>불러오는 중…</span></div>`).join('');
+}
+
+function linkCard(name, url, label) {
+  return `<div class="market-item"><b>${esc(name)}</b><span><a class="source-link" href="${url}" target="_blank" rel="noreferrer">${esc(label)} ↗</a></span></div>`;
+}
+
+// 최근 N영업일 스파크라인 SVG (단일 계열, 축·범례 없음)
+function sparklineSVG(rows) {
+  if (!rows || rows.length < 2) return '';
+  const W = 220, H = 40, PAD = 4;
+  const vals = rows.map(r => r.price_per_kg);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const span = max - min || 1;
+  const x = i => PAD + (i * (W - PAD * 2)) / (rows.length - 1);
+  const y = v => PAD + (1 - (v - min) / span) * (H - PAD * 2);
+  const line = rows.map((r, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(r.price_per_kg).toFixed(1)}`).join(' ');
+  const last = rows.length - 1;
+  return `<svg viewBox="0 0 ${W} ${H}" class="spark-svg" preserveAspectRatio="none">
+    <path d="${line} L${x(last).toFixed(1)},${H} L${x(0).toFixed(1)},${H} Z" fill="var(--blue)" fill-opacity="0.14"/>
+    <path d="${line}" fill="none" stroke="var(--blue)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${x(last).toFixed(1)}" cy="${y(rows[last].price_per_kg).toFixed(1)}" r="2.6" fill="var(--blue)"/>
+  </svg>`;
+}
+
+function won(n) { return n == null ? '-' : n.toLocaleString('ko-KR'); }
+function shift(iso, days) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); }
+function priceOnOrBefore(rows, iso) { let f = null; for (const r of rows) { if (r.price_date <= iso) f = r; else break; } return f; }
+
+function pigCard(prices) {
+  if (!prices.length) {
+    return { status: '돼지 시세 데이터가 아직 없습니다.',
+             html: linkCard('양돈', 'https://www.ekape.or.kr', '축산물품질평가원') };
+  }
+  const latest = prices[prices.length - 1];
+  const spark = prices.slice(-14);
+  const cmp = (label, ref) => {
+    if (!ref) return `<span class="d-mini">${label} -</span>`;
+    const diff = latest.price_per_kg - ref.price_per_kg;
+    const arr = diff > 0 ? '▲' : diff < 0 ? '▼' : '·';
+    const cls = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
+    return `<span class="d-mini ${cls}">${label} ${arr}${Math.abs(diff).toLocaleString('ko-KR')}</span>`;
+  };
+  const prev = prices.length > 1 ? prices[prices.length - 2] : null;
+  const wkAgo = priceOnOrBefore(prices, shift(latest.price_date, -7));
+  const yrAgo = priceOnOrBefore(prices, shift(latest.price_date, -365));
+  return {
+    status: `돼지 도매(등외제외) ${latest.price_date} 기준 · 축산물품질평가원`,
+    html: `<div class="market-item wide-item"><div class="mi-head"><b>양돈</b><span class="mi-unit">등외제외 · 원/kg</span></div>
+      <div class="mi-hero">${won(latest.price_per_kg)}</div>
+      ${sparklineSVG(spark)}
+      <div class="mi-deltas">${cmp('전일', prev)} ${cmp('전주', wkAgo)} ${cmp('전년', yrAgo)}</div>
+    </div>`
+  };
 }
