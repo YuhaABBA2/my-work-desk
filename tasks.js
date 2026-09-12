@@ -1,7 +1,7 @@
 import { sb } from './supabase.js';
 import { state, today } from './state.js';
-import { iso, addDays, sortTasks, occurrenceDates, repeatLabel } from './lib.js';
-import { $, render, resetForm, fillEditForm } from './ui.js';
+import { iso, addDays, sortTasks, occurrenceDates, splitSeriesEdit } from './lib.js';
+import { $, render, resetForm, fillEditForm, askSeriesScope } from './ui.js';
 
 export async function load() {
   const { data, error } = await sb.from('work_tasks').select('*').order('task_date').order('task_time');
@@ -14,7 +14,8 @@ export async function load() {
     project: x.project,
     time: x.task_time?.slice(0, 5) || '',
     note: x.note,
-    done: x.done
+    done: x.done,
+    seriesId: x.series_id || null
   }));
   render();
 }
@@ -34,23 +35,45 @@ function readForm() {
 export async function saveTask(e) {
   e.preventDefault();
   const base = readForm();
+
   if (state.editId) {
-    const { error } = await sb.from('work_tasks').update(base).eq('id', state.editId);
-    if (error) return alert('수정하지 못했습니다.');
+    const current = state.tasks.find(t => t.id === state.editId);
+    let scope = 'one';
+    if (current?.seriesId) {
+      scope = await askSeriesScope('edit');
+      if (!scope) return;
+    }
+    if (scope === 'following') {
+      const { seriesFields, task_date } = splitSeriesEdit(base);
+      const r1 = await sb.from('work_tasks').update(seriesFields)
+        .eq('series_id', current.seriesId).gte('task_date', current.date);
+      if (r1.error) return alert('수정하지 못했습니다.');
+      if (task_date !== current.date) {
+        const r2 = await sb.from('work_tasks').update({ task_date }).eq('id', state.editId);
+        if (r2.error) return alert('날짜를 수정하지 못했습니다.');
+      }
+    } else {
+      const { error } = await sb.from('work_tasks').update(base).eq('id', state.editId);
+      if (error) return alert('수정하지 못했습니다.');
+    }
     await load();
     resetForm();
     return;
   }
+
   const repeat = $('#repeat').value;
   const count = repeat === 'none' ? 1 : Math.min(24, Math.max(1, Number($('#repeatCount').value || 1)));
-  const records = occurrenceDates(base.task_date, repeat, count).map((date, i) => ({
+  // 반복이면 시리즈 ID 하나를 모든 행에 붙인다. 회차 표시는 메모 대신 series_id 배지로 대신한다.
+  const seriesId = repeat === 'none' ? null : crypto.randomUUID();
+  const records = occurrenceDates(base.task_date, repeat, count).map(date => ({
     user_id: state.user.id,
     title: base.title,
     task_date: date,
     priority: base.priority,
     project: base.project,
     task_time: base.task_time,
-    note: repeat === 'none' ? base.note : [base.note, `${repeatLabel(repeat)} 반복 ${i + 1}/${count}`].filter(Boolean).join(' · ')
+    note: base.note,
+    series_id: seriesId
   }));
   const { error } = await sb.from('work_tasks').insert(records);
   if (error) return alert('저장하지 못했습니다. Supabase 테이블 설정을 확인해 주세요.');
@@ -72,11 +95,22 @@ export function editTask(id) {
 }
 
 export async function removeTask(id) {
-  if (!confirm('이 업무를 삭제할까요?')) return;
-  const { error } = await sb.from('work_tasks').delete().eq('id', id);
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  let query;
+  if (t.seriesId) {
+    const scope = await askSeriesScope('delete');
+    if (!scope) return;
+    query = scope === 'following'
+      ? sb.from('work_tasks').delete().eq('series_id', t.seriesId).gte('task_date', t.date)
+      : sb.from('work_tasks').delete().eq('id', id);
+  } else {
+    if (!confirm('이 업무를 삭제할까요?')) return;
+    query = sb.from('work_tasks').delete().eq('id', id);
+  }
+  const { error } = await query;
   if (error) return alert('삭제하지 못했습니다.');
-  state.tasks = state.tasks.filter(t => t.id !== id);
-  render();
+  await load();
 }
 
 export async function notifyDue() {

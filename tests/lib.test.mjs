@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { iso, parseIso, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames } from '../lib.js';
+import { iso, parseIso, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit } from '../lib.js';
 
 test('parseIso → iso 왕복', () => {
   assert.equal(iso(parseIso('2026-09-12')), '2026-09-12');
@@ -47,4 +47,12 @@ test('mergeProjectNames: 로컬 우선, 업무에서 온 이름 추가, 중복·
   );
   assert.deepEqual(mergeProjectNames([], []), []);
   assert.deepEqual(mergeProjectNames([' 공백 '], []), ['공백']);
+});
+
+test('splitSeriesEdit: task_date 만 분리하고 나머지는 그대로', () => {
+  const base = { title: 'A', task_date: '2026-09-12', priority: 'high', project: null, task_time: '09:00', note: 'n', updated_at: 'u' };
+  const { seriesFields, task_date } = splitSeriesEdit(base);
+  assert.equal(task_date, '2026-09-12');
+  assert.deepEqual(seriesFields, { title: 'A', priority: 'high', project: null, task_time: '09:00', note: 'n', updated_at: 'u' });
+  assert.equal('task_date' in seriesFields, false);
 });

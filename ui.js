@@ -22,6 +22,7 @@ function taskHTML(t) {
       <div class="task-meta">${t.time ? esc(t.time) + ' · ' : ''}${esc(t.project || '미분류')}${t.note ? ' · ' + esc(t.note) : ''}</div>
     </div>
     ${dueInfo(t)}
+    ${t.seriesId ? '<span class="badge repeat">반복</span>' : ''}
     <span class="badge ${t.priority}">${pri(t.priority)}</span>
     <button class="edit" data-action="edit-task" data-id="${esc(t.id)}">수정</button>
     <button class="delete" aria-label="삭제" data-action="remove-task" data-id="${esc(t.id)}">×</button>
@@ -128,4 +129,18 @@ export function selectDate(date) {
   calendar();
   $('#title').focus();
   $('#addForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// 시리즈 일정 수정/삭제 범위. 취소·Esc 는 null.
+export function askSeriesScope(mode) {
+  const dlg = $('#seriesDialog');
+  $('#seriesDialogTitle').textContent = mode === 'delete' ? '반복 일정 삭제' : '반복 일정 수정';
+  return new Promise(resolve => {
+    dlg.addEventListener('close', () => {
+      const v = dlg.returnValue;
+      resolve(v === 'one' || v === 'following' ? v : null);
+    }, { once: true });
+    dlg.returnValue = '';
+    dlg.showModal();
+  });
 }

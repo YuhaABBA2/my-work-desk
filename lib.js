@@ -35,6 +35,12 @@ export function occurrenceDates(startIso, repeat, count) {
   });
 }
 
+// "이후 모두" 수정: 날짜는 편집 중인 일정에만, 나머지 필드는 시리즈 전체에 적용한다.
+export function splitSeriesEdit(base) {
+  const { task_date, ...seriesFields } = base;
+  return { seriesFields, task_date };
+}
+
 // 1회 이관용: 이 기기의 localStorage 목록 + 업무에 실제 쓰인 이름. 순서 유지, 공백 정리, 중복 제거.
 export function mergeProjectNames(local, fromTasks) {
   return [...new Set([...local, ...fromTasks].map(s => String(s || '').trim()).filter(Boolean))];
