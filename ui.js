@@ -135,11 +135,25 @@ export function selectDate(date) {
 export function askSeriesScope(mode) {
   const dlg = $('#seriesDialog');
   $('#seriesDialogTitle').textContent = mode === 'delete' ? '반복 일정 삭제' : '반복 일정 수정';
+  const form = dlg.querySelector('form');
   return new Promise(resolve => {
-    dlg.addEventListener('close', () => {
-      const v = dlg.returnValue;
+    // 선택은 form submit(버튼 value)과 cancel(Esc)로 판정한다. Chrome 152에서는 dialog의
+    // close 이벤트가 오지 않는 경우가 있어 close에만 기대면 선택이 무시된다. close는 보조.
+    let done = false;
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      form.removeEventListener('submit', onSubmit);
+      dlg.removeEventListener('cancel', onCancel);
+      dlg.removeEventListener('close', onClose);
       resolve(v === 'one' || v === 'following' ? v : null);
-    }, { once: true });
+    };
+    const onSubmit = (e) => finish(e.submitter?.value);
+    const onCancel = () => finish(null);
+    const onClose = () => finish(dlg.returnValue);
+    form.addEventListener('submit', onSubmit);
+    dlg.addEventListener('cancel', onCancel);
+    dlg.addEventListener('close', onClose);
     dlg.returnValue = '';
     dlg.showModal();
   });
