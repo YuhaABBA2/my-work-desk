@@ -29,6 +29,9 @@ export async function loadFamily() {
     isAdmin: fam.data.owner_id === state.user.id,
     members: mem.data.map(m => ({ userId: m.user_id, name: m.display_name }))
   };
+  // 이 사용자가 예전에 만든 "가족 일정"/"가족일정" 업무 중 family_id 가 아직 없는 것을 소급해서 태그한다. 멱등.
+  await sb.from('work_tasks').update({ family_id: fid })
+    .eq('user_id', state.user.id).in('project', ['가족 일정', '가족일정']).is('family_id', null);
   return null;
 }
 
