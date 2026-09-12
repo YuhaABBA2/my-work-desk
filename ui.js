@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel } from './lib.js';
 import { today, state, settings } from './state.js';
 
 export const $ = (s) => document.querySelector(s);
@@ -21,6 +21,8 @@ function taskMeta(t) {
   parts.push(t.time ? esc(t.time) : '하루종일');
   parts.push(esc(t.project || '미분류'));
   if (t.note) parts.push(esc(t.note));
+  const author = authorLabel(t, state.user?.id, state.family?.members || []);
+  if (author) parts.push(esc(author));
   return parts.join(' · ');
 }
 

@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { state, today } from './state.js';
-import { iso, addDays, sortTasks, occurrenceDates, splitSeriesEdit, shiftEndDate, dueDate } from './lib.js';
+import { iso, addDays, sortTasks, occurrenceDates, splitSeriesEdit, shiftEndDate, dueDate, familyIdFor } from './lib.js';
 import { $, render, resetForm, fillEditForm, askSeriesScope } from './ui.js';
 
 export async function load() {
@@ -18,7 +18,9 @@ export async function load() {
     seriesId: x.series_id || null,
     endDate: x.end_date || null,
     remind1h: !!x.remind_1h,
-    remind1d: !!x.remind_1d
+    remind1d: !!x.remind_1d,
+    userId: x.user_id,
+    familyId: x.family_id || null
   }));
   render();
 }
@@ -33,6 +35,7 @@ function readForm() {
     end_date: $('#endDate').value || null,
     priority: $('#priority').value,
     project: $('#project').value || null,
+    family_id: familyIdFor($('#project').value || null, state.family),
     task_time,
     remind_1h: task_time ? $('#remind1h').checked : false,
     remind_1d: $('#remind1d').checked,
@@ -86,6 +89,7 @@ export async function saveTask(e) {
     remind_1h: base.remind_1h,
     remind_1d: base.remind_1d,
     note: base.note,
+    family_id: base.family_id,
     series_id: seriesId
   }));
   const { error } = await sb.from('work_tasks').insert(records);
