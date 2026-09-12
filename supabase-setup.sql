@@ -188,3 +188,33 @@ drop policy if exists work_tasks_update on public.work_tasks;
 create policy work_tasks_update on public.work_tasks for update to authenticated
   using (user_id = (select auth.uid()) or family_id in (select public.my_family_ids()))
   with check (user_id = (select auth.uid()) or family_id is null or family_id in (select public.my_family_ids()));
+
+-- ---------- 푸시 알림 (Web Push) ----------
+create table if not exists public.push_subscriptions (
+  endpoint text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  p256dh text not null,
+  auth text not null,
+  ua text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists push_subscriptions_user_idx on public.push_subscriptions(user_id);
+
+alter table public.push_subscriptions enable row level security;
+drop policy if exists push_subscriptions_own on public.push_subscriptions;
+create policy push_subscriptions_own on public.push_subscriptions for all to authenticated
+  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+
+create table if not exists public.notification_log (
+  task_id uuid not null references public.work_tasks(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  reminder_kind text not null check (reminder_kind in ('1h', '1d')),
+  sent_at timestamptz not null default now(),
+  primary key (task_id, user_id, reminder_kind)
+);
+alter table public.notification_log enable row level security;
+drop policy if exists notification_log_read on public.notification_log;
+create policy notification_log_read on public.notification_log for select to authenticated
+  using (user_id = (select auth.uid()));
+-- 삽입은 service_role (크론) 만.

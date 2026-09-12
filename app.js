@@ -2,9 +2,10 @@ import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
 import { iso, isValidFamilyCode, rpcErrorMessage } from './lib.js';
 import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog } from './ui.js';
-import { load, saveTask, toggleTask, editTask, removeTask, notifyDue } from './tasks.js';
+import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
+import { pushSupported, getPushState, enablePush, disablePush } from './notify.js';
 import { loadFamily, createFamily, joinFamily, leaveFamily, regenerateCode, renameMe, defaultDisplayName } from './family.js';
 import { loadSettings, setShowMarket } from './settings.js';
 
@@ -93,6 +94,34 @@ async function start() {
   if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); }
 }
 
+
+async function refreshPushLabel() {
+  const btn = $('#notifyDue');
+  if (!btn) return;
+  const st = await getPushState();
+  if (!st.supported) { btn.textContent = '알림 미지원'; btn.disabled = true; return; }
+  if (st.permission === 'denied') { btn.textContent = '알림 차단됨'; btn.disabled = true; btn.title = '브라우저 설정에서 알림 허용을 다시 켜 주세요.'; return; }
+  btn.disabled = false;
+  btn.textContent = st.subscribed ? '알림 켜짐' : '알림 켜기';
+  btn.title = st.subscribed ? '누르면 알림을 끕니다.' : '누르면 이 기기로 마감 알림을 받습니다.';
+}
+
+async function onNotifyToggle() {
+  const st = await getPushState();
+  try {
+    if (st.subscribed) {
+      if (!confirm('이 기기의 알림을 끌까요?')) return;
+      await disablePush();
+    } else {
+      await enablePush();
+      alert('알림이 켜졌습니다. 저장된 업무의 알림 시점이 되면 이 기기로 알림이 도착합니다.');
+    }
+  } catch (err) {
+    alert(err?.message || '알림 설정을 바꾸지 못했습니다.');
+  }
+  refreshPushLabel();
+}
+
 $('#googleLogin').onclick = async () => {
   const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href } });
   if (error) $('#notice').textContent = '로그인을 시작하지 못했습니다. Google 로그인이 활성화됐는지 확인해 주세요.';
@@ -118,7 +147,7 @@ $('#next').onclick = () => { state.view.setMonth(state.view.getMonth() + 1); cal
 $('#thisMonth').onclick = () => { state.view = new Date(today.getFullYear(), today.getMonth(), 1); state.selectedDate = iso(today); $('#date').value = state.selectedDate; calendar(); };
 $('#toggleDone').onclick = () => { settings.hideDone = !settings.hideDone; render(); };
 $('#darkMode').onclick = () => { settings.dark = !settings.dark; render(); };
-$('#notifyDue').onclick = notifyDue;
+$('#notifyDue').onclick = onNotifyToggle;
 $('#addProject').onclick = onAddProject;
 $('#familyBody').addEventListener('click', handleFamilyAction);
 $('#familyBody').addEventListener('keydown', e => {
