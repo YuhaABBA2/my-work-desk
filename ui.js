@@ -1,0 +1,131 @@
+import { iso, addDays, esc, pri, sortTasks } from './lib.js';
+import { today, state, settings } from './state.js';
+
+export const $ = (s) => document.querySelector(s);
+
+function visibleTasks() { return settings.hideDone ? state.tasks.filter(t => !t.done) : state.tasks; }
+
+function dueInfo(t) {
+  if (t.done) return '';
+  const diff = Math.round((new Date(t.date) - today) / 86400000);
+  if (diff < 0) return '<span class="due-badge overdue">지남</span>';
+  if (diff === 0) return '<span class="due-badge today-due">오늘</span>';
+  if (diff <= 3) return `<span class="due-badge soon">${diff}일</span>`;
+  return '';
+}
+
+function taskHTML(t) {
+  return `<div class="task ${t.done ? 'done' : ''}">
+    <input class="check" type="checkbox" ${t.done ? 'checked' : ''} data-action="toggle-task" data-id="${esc(t.id)}">
+    <div class="task-main">
+      <div class="task-title">${esc(t.title)}</div>
+      <div class="task-meta">${t.time ? esc(t.time) + ' · ' : ''}${esc(t.project || '미분류')}${t.note ? ' · ' + esc(t.note) : ''}</div>
+    </div>
+    ${dueInfo(t)}
+    <span class="badge ${t.priority}">${pri(t.priority)}</span>
+    <button class="edit" data-action="edit-task" data-id="${esc(t.id)}">수정</button>
+    <button class="delete" aria-label="삭제" data-action="remove-task" data-id="${esc(t.id)}">×</button>
+  </div>`;
+}
+
+export function render() {
+  document.documentElement.classList.toggle('dark', settings.dark);
+  $('#toggleDone').textContent = settings.hideDone ? '완료 보이기' : '완료 숨기기';
+  $('#darkMode').textContent = settings.dark ? '라이트모드' : '다크모드';
+
+  const td = iso(today);
+  const open = state.tasks.filter(t => !t.done);
+  const done = state.tasks.filter(t => t.done);
+  const shown = visibleTasks();
+  $('#openCount').textContent = open.length;
+  $('#doneCount').textContent = done.length;
+  $('#todayTasks').innerHTML = shown.filter(t => t.date === td).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">오늘 등록된 업무가 없습니다.</div>';
+  const until = iso(addDays(today, 7));
+  $('#weekTasks').innerHTML = shown.filter(t => !t.done && t.date >= td && t.date <= until).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">이번 주 마감 업무가 없습니다.</div>';
+
+  const dueSoon = open.filter(t => t.date <= iso(addDays(today, 3))).sort(sortTasks);
+  $('#dueAlerts').innerHTML = dueSoon.length ? `<div class="alert">마감 임박 ${dueSoon.length}건: ${esc(dueSoon.slice(0, 3).map(t => t.title).join(', '))}</div>` : '';
+
+  renderProjects();
+  calendar();
+}
+
+export function setProjectStatus(msg) {
+  const el = $('#projectStatus');
+  if (el) el.textContent = msg || '';
+}
+
+export function renderProjects() {
+  const favorites = state.projects;
+  const fromTasks = [...new Set(state.tasks.map(t => t.project || '미분류'))];
+  const allProjects = [...new Set([...favorites, ...fromTasks])];
+  $('#projects').innerHTML = allProjects.map(p => `<option value="${esc(p)}">`).join('');
+  $('#projectChips').innerHTML = favorites.map(p => `<span class="chip">${esc(p)} <button data-action="delete-project" data-project="${esc(p)}">×</button></span>`).join('');
+
+  const ongoing = state.tasks.filter(t => !t.done);
+  const groups = {};
+  ongoing.forEach(t => { const p = t.project || '미분류'; (groups[p] ??= []).push(t); });
+  $('#projectsView').innerHTML = Object.entries(groups).map(([p, items]) => {
+    const all = state.tasks.filter(t => (t.project || '미분류') === p);
+    const pct = Math.round((all.length - items.length) / all.length * 100);
+    return `<div class="project"><div class="project-line"><span>${esc(p)}</span><span class="hint">${items.length}건 남음</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  }).join('') || '<div class="empty">프로젝트별 업무를 등록해 보세요.</div>';
+}
+
+export function calendar() {
+  const y = state.view.getFullYear();
+  const m = state.view.getMonth();
+  const first = new Date(y, m, 1).getDay();
+  const days = new Date(y, m + 1, 0).getDate();
+  const prev = new Date(y, m, 0).getDate();
+  $('#monthLabel').textContent = `${y}년 ${m + 1}월`;
+  let html = '';
+  const shown = visibleTasks();
+  for (let i = 0; i < 42; i++) {
+    let n, dt, other = false;
+    if (i < first) { n = prev - first + i + 1; dt = new Date(y, m - 1, n); other = true; }
+    else if (i >= first + days) { n = i - first - days + 1; dt = new Date(y, m + 1, n); other = true; }
+    else { n = i - first + 1; dt = new Date(y, m, n); }
+    const dayIso = iso(dt);
+    const list = shown.filter(t => t.date === dayIso).slice(0, 2);
+    html += `<button class="day ${other ? 'other' : ''} ${dayIso === iso(today) ? 'today' : ''} ${dayIso === state.selectedDate ? 'selected' : ''}" data-date="${dayIso}"><b>${n}</b>${list.map(t => `<span class="dot">${esc(t.title)}</span>`).join('')}</button>`;
+  }
+  $('#calendar').innerHTML = html;
+}
+
+export function resetForm() {
+  state.editId = null;
+  $('#formTitle').textContent = '업무 · 일정 추가';
+  $('#submitTask').textContent = '추가하기';
+  $('#cancelEdit').hidden = true;
+  $('#repeat').disabled = false;
+  $('#repeatCount').disabled = false;
+  $('#addForm').reset();
+  $('#date').value = state.selectedDate || iso(today);
+  $('#repeatCount').value = 1;
+}
+
+export function fillEditForm(t) {
+  state.editId = t.id;
+  $('#formTitle').textContent = '업무 · 일정 수정';
+  $('#submitTask').textContent = '수정 저장';
+  $('#cancelEdit').hidden = false;
+  $('#title').value = t.title;
+  $('#date').value = t.date;
+  $('#priority').value = t.priority;
+  $('#project').value = t.project || '';
+  $('#time').value = t.time || '';
+  $('#note').value = t.note || '';
+  $('#repeat').value = 'none';
+  $('#repeat').disabled = true;
+  $('#repeatCount').disabled = true;
+  $('#addForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+export function selectDate(date) {
+  state.selectedDate = date;
+  $('#date').value = date;
+  calendar();
+  $('#title').focus();
+  $('#addForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}

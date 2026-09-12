@@ -59,6 +59,7 @@
       </article>
       <article class="card">
         <div class="card-head"><h2>프로젝트 관리</h2><span class="hint">자주 쓰는 카테고리</span></div>
+        <div id="projectStatus" class="status"></div>
         <div class="project-add"><input id="newProject" maxlength="100" placeholder="새 카테고리"><button id="addProject" class="tool">추가</button></div>
         <div id="projectChips" class="chips"></div>
         <div id="projectsView" class="project-list"></div>
@@ -98,6 +99,6 @@
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/app.js"></script>
+  <script type="module" src="/app.js"></script>
 </body>
 </html>

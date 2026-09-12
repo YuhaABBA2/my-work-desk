@@ -1,0 +1,89 @@
+import { sb } from './supabase.js';
+import { state, today } from './state.js';
+import { iso, addDays, sortTasks, occurrenceDates, repeatLabel } from './lib.js';
+import { $, render, resetForm, fillEditForm } from './ui.js';
+
+export async function load() {
+  const { data, error } = await sb.from('work_tasks').select('*').order('task_date').order('task_time');
+  if (error) return alert('업무 목록을 불러오지 못했습니다. Supabase 설정을 확인해 주세요.');
+  state.tasks = data.map(x => ({
+    id: x.id,
+    title: x.title,
+    date: x.task_date,
+    priority: x.priority,
+    project: x.project,
+    time: x.task_time?.slice(0, 5) || '',
+    note: x.note,
+    done: x.done
+  }));
+  render();
+}
+
+function readForm() {
+  return {
+    title: $('#title').value.trim(),
+    task_date: $('#date').value,
+    priority: $('#priority').value,
+    project: $('#project').value.trim() || null,
+    task_time: $('#time').value || null,
+    note: $('#note').value.trim() || null,
+    updated_at: new Date().toISOString()
+  };
+}
+
+export async function saveTask(e) {
+  e.preventDefault();
+  const base = readForm();
+  if (state.editId) {
+    const { error } = await sb.from('work_tasks').update(base).eq('id', state.editId);
+    if (error) return alert('수정하지 못했습니다.');
+    await load();
+    resetForm();
+    return;
+  }
+  const repeat = $('#repeat').value;
+  const count = repeat === 'none' ? 1 : Math.min(24, Math.max(1, Number($('#repeatCount').value || 1)));
+  const records = occurrenceDates(base.task_date, repeat, count).map((date, i) => ({
+    user_id: state.user.id,
+    title: base.title,
+    task_date: date,
+    priority: base.priority,
+    project: base.project,
+    task_time: base.task_time,
+    note: repeat === 'none' ? base.note : [base.note, `${repeatLabel(repeat)} 반복 ${i + 1}/${count}`].filter(Boolean).join(' · ')
+  }));
+  const { error } = await sb.from('work_tasks').insert(records);
+  if (error) return alert('저장하지 못했습니다. Supabase 테이블 설정을 확인해 주세요.');
+  await load();
+  resetForm();
+}
+
+export async function toggleTask(id) {
+  const t = state.tasks.find(x => x.id === id);
+  const { error } = await sb.from('work_tasks').update({ done: !t.done, updated_at: new Date().toISOString() }).eq('id', id);
+  if (error) return alert('저장하지 못했습니다.');
+  t.done = !t.done;
+  render();
+}
+
+export function editTask(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (t) fillEditForm(t);
+}
+
+export async function removeTask(id) {
+  if (!confirm('이 업무를 삭제할까요?')) return;
+  const { error } = await sb.from('work_tasks').delete().eq('id', id);
+  if (error) return alert('삭제하지 못했습니다.');
+  state.tasks = state.tasks.filter(t => t.id !== id);
+  render();
+}
+
+export async function notifyDue() {
+  const due = state.tasks.filter(t => !t.done && t.date <= iso(addDays(today, 3))).sort(sortTasks);
+  if (!due.length) return alert('마감 임박 업무가 없습니다.');
+  if (!('Notification' in window)) return alert('이 브라우저는 알림을 지원하지 않습니다.');
+  const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+  if (permission !== 'granted') return;
+  new Notification('마감 임박 업무', { body: due.slice(0, 4).map(t => t.title).join(', ') });
+}
