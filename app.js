@@ -1,7 +1,7 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
 import { iso, isValidFamilyCode, rpcErrorMessage } from './lib.js';
-import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus } from './ui.js';
+import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask, notifyDue } from './tasks.js';
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
@@ -52,6 +52,7 @@ async function handleFamilyAction(e) {
   await load();          // 가족 업무가 들어오거나 빠진다
   renderFamily();
   applyMarketVisibility();
+  syncShareFamilyForProject();
 }
 
 async function onToggleMarket() {
@@ -88,6 +89,7 @@ async function start() {
   renderProjects();
   renderFamily();
   applyMarketVisibility();
+  syncShareFamilyForProject();
   if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); }
 }
 
@@ -108,6 +110,7 @@ $('#calendar').addEventListener('click', e => {
 $('#projectChips').addEventListener('click', handleTaskAction);
 $('#cancelEdit').onclick = resetForm;
 $('#allDay').addEventListener('change', e => setAllDay(e.target.checked));
+$('#project').addEventListener('change', syncShareFamilyForProject);
 $('#prev').onclick = () => { state.view.setMonth(state.view.getMonth() - 1); calendar(); };
 $('#next').onclick = () => { state.view.setMonth(state.view.getMonth() + 1); calendar(); };
 $('#thisMonth').onclick = () => { state.view = new Date(today.getFullYear(), today.getMonth(), 1); state.selectedDate = iso(today); $('#date').value = state.selectedDate; calendar(); };

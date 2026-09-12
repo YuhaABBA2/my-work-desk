@@ -35,7 +35,7 @@ function readForm() {
     end_date: $('#endDate').value || null,
     priority: $('#priority').value,
     project: $('#project').value || null,
-    family_id: familyIdFor($('#project').value || null, state.family),
+    family_id: familyIdFor($('#project').value || null, state.family, $('#shareFamily').checked),
     task_time,
     remind_1h: task_time ? $('#remind1h').checked : false,
     remind_1d: $('#remind1d').checked,

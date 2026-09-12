@@ -4,7 +4,7 @@ import {
   iso, parseIso, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
   dueState, shiftEndDate, fmtMd,
-  CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, authorLabel, rpcErrorMessage
+  CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage
 } from '../lib.js';
 
 test('parseIso → iso 왕복', () => {
@@ -153,11 +153,21 @@ test('isValidFamilyCode', () => {
   assert.equal(isValidFamilyCode(null), false);
 });
 
-test('familyIdFor: 가족 일정 + 가족 있음일 때만 id', () => {
+test('isFamilyProject: 띄어쓰기 있든 없든 인식', () => {
+  assert.equal(isFamilyProject('가족 일정'), true);
+  assert.equal(isFamilyProject('가족일정'), true);
+  assert.equal(isFamilyProject('개인 일정'), false);
+  assert.equal(isFamilyProject(null), false);
+});
+
+test('familyIdFor: 가족 프로젝트이거나 사용자가 공유 켰을 때만 id', () => {
   const fam = { id: 'f1' };
   assert.equal(familyIdFor('가족 일정', fam), 'f1');
+  assert.equal(familyIdFor('가족일정', fam), 'f1');
   assert.equal(familyIdFor('가족 일정', null), null);
   assert.equal(familyIdFor('개인 일정', fam), null);
+  assert.equal(familyIdFor('개인 일정', fam, true), 'f1');   // 공유 태그 켬
+  assert.equal(familyIdFor('개인 일정', null, true), null);   // 가족 없으면 무시
   assert.equal(familyIdFor(null, fam), null);
 });
 

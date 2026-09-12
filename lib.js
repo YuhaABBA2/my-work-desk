@@ -110,9 +110,15 @@ export function isValidFamilyCode(code) {
   return /^[A-Z0-9]{6}$/.test(String(code || '').trim().toUpperCase());
 }
 
-// 저장 규칙: "가족 일정" 프로젝트이고 내가 가족에 속해 있을 때만 family_id 를 붙인다.
-export function familyIdFor(project, family) {
-  return project === '가족 일정' && family ? family.id : null;
+// 가족 프로젝트 판정. "가족 일정" 뿐 아니라 띄어쓰기 없는 "가족일정" 도 인정한다(기존 사용자 데이터).
+export function isFamilyProject(name) {
+  return name === '가족 일정' || name === '가족일정';
+}
+
+// 저장 규칙: 가족 프로젝트이거나 사용자가 "가족과 공유"를 켰고, 내가 가족에 속해 있을 때만 family_id 를 붙인다.
+export function familyIdFor(project, family, shareOverride) {
+  const share = isFamilyProject(project) || !!shareOverride;
+  return share && family ? family.id : null;
 }
 
 // 가족 업무인데 내가 만든 게 아니면 작성자 이름. 목록에 없으면(나간 사람) "가족".

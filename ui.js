@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject } from './lib.js';
 import { today, state, settings } from './state.js';
 
 export const $ = (s) => document.querySelector(s);
@@ -173,6 +173,8 @@ export function resetForm() {
   $('#repeatCount').value = 1;
   setAllDay(false);
   renderProjectOptions(undefined);
+  setShareFamily(false, false);
+  syncShareFamilyForProject();
 }
 
 // 프로젝트 select 옵션. selected 가 목록에 없으면 임시 옵션으로 넣는다(옛 이름, null → 미분류).
@@ -196,6 +198,23 @@ export function setAllDay(on) {
   if (on) $('#remind1h').checked = false;
 }
 
+// 가족과 공유 체크박스: 가족 프로젝트면 켜서 잠그고, 가족이 없으면 아예 숨긴다.
+export function setShareFamily(on, locked) {
+  const row = $('#shareFamilyRow');
+  const cb = $('#shareFamily');
+  row.hidden = !state.family;
+  cb.checked = !!on;
+  cb.disabled = !!locked;
+  row.classList.toggle('locked', !!locked);
+}
+
+// 프로젝트 값에 맞춰 공유 체크박스 상태 갱신. 가족 프로젝트면 무조건 켜고 잠근다.
+export function syncShareFamilyForProject() {
+  const p = $('#project').value || null;
+  if (isFamilyProject(p)) setShareFamily(true, true);
+  else setShareFamily($('#shareFamily').checked, false);
+}
+
 export function fillEditForm(t) {
   state.editId = t.id;
   $('#formTitle').textContent = '업무 · 일정 수정';
@@ -210,6 +229,7 @@ export function fillEditForm(t) {
   $('#time').value = t.time || '';
   $('#remind1h').checked = !!t.remind1h && !!t.time;
   $('#remind1d').checked = !!t.remind1d;
+  setShareFamily(!!t.familyId, isFamilyProject(t.project));
   $('#note').value = t.note || '';
   $('#repeat').value = 'none';
   $('#repeat').disabled = true;
