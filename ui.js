@@ -174,11 +174,12 @@ export function calendar() {
     else { n = i - first + 1; dt = new Date(y, m, n); }
     const dayIso = iso(dt);
     const all = shown.filter(t => spansDay(t, dayIso));
-    const list = all.slice(0, 2);
+    const LIMIT = 4;
+    const list = all.slice(0, LIMIT);
     const dots = list.map(t => {
       const c = projectColor(t.project);
-      return `<span class="dot" style="background:${c}22;color:${c}">${esc(t.title)}</span>`;
-    }).join('') + (all.length > 2 ? `<span class="dot more">+${all.length - 2}</span>` : '');
+      return `<span class="dot" style="background:${c}22;color:${c}" title="${esc(t.title)}">${esc(t.title)}</span>`;
+    }).join('') + (all.length > LIMIT ? `<span class="dot more">+${all.length - LIMIT}</span>` : '');
     html += `<button class="day ${other ? 'other' : ''} ${dayIso === iso(today) ? 'today' : ''} ${dayIso === state.selectedDate ? 'selected' : ''}" data-date="${dayIso}"><b>${n}</b>${dots}</button>`;
   }
   $('#calendar').innerHTML = html;
