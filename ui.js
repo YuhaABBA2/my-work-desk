@@ -76,6 +76,40 @@ export function setProjectStatus(msg) {
   if (el) el.textContent = msg || '';
 }
 
+export function setFamilyStatus(msg) {
+  const el = $('#familyStatus');
+  if (el) el.textContent = msg || '';
+}
+
+export function renderFamily() {
+  const box = $('#familyBody');
+  const f = state.family;
+  if (!f) {
+    box.innerHTML = `<p class="hint">가족을 만들거나 초대 코드를 입력하면 "가족 일정" 업무를 함께 볼 수 있습니다.</p>
+      <div class="family-actions"><button id="createFamily" class="primary">가족 만들기</button></div>
+      <div class="project-add"><input id="joinCode" maxlength="6" placeholder="초대 코드 6자리" autocapitalize="characters" autocomplete="off"><button id="joinFamily" class="tool">참여</button></div>`;
+    return;
+  }
+  const me = f.members.find(m => m.userId === state.user.id);
+  box.innerHTML = `<ul class="members">${f.members.map(m =>
+    `<li><i class="dot-color" style="background:#f0730a"></i>${esc(m.name)}${m.userId === f.ownerId ? ' <span class="badge repeat">관리자</span>' : ''}${m.userId === state.user.id ? ' <span class="hint">(나)</span>' : ''}</li>`
+  ).join('')}</ul>
+    <div class="project-add"><input id="myName" maxlength="30" value="${esc(me?.name || '')}" placeholder="내 표시 이름"><button id="renameMe" class="tool">저장</button></div>
+    ${f.isAdmin
+      ? `<div class="code-line">초대 코드 <b class="code">${esc(f.code)}</b><button id="regenCode" class="text-button">재발급</button></div>`
+      : `<button id="leaveFamily" class="text-button">가족 나가기</button>`}`;
+}
+
+// 시세·투자 패널은 계정 설정으로, 토글 버튼은 관리자(또는 가족 없음)에게만.
+export function applyMarketVisibility() {
+  const on = !!state.settings.showMarket;
+  $('.market-card').hidden = !on;
+  $('.investment-card').hidden = !on;
+  const btn = $('#toggleMarket');
+  btn.hidden = !(!state.family || state.family.isAdmin);
+  btn.textContent = on ? '시세·투자 숨기기' : '시세·투자 보기';
+}
+
 export function renderProjects() {
   const favorites = state.projects;
   const dot = (p) => `<i class="dot-color" style="background:${projectColor(p)}"></i>`;

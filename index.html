@@ -35,6 +35,7 @@
       <button id="toggleDone" class="tool">완료 숨기기</button>
       <button id="darkMode" class="tool">다크모드</button>
       <button id="notifyDue" class="tool">마감 알림</button>
+      <button id="toggleMarket" class="tool" hidden>시세·투자 보기</button>
     </section>
     <section class="grid">
       <article class="card hero-card">
@@ -82,16 +83,21 @@
         <div id="projectsView" class="project-list"></div>
       </article>
       <article class="card">
+        <div class="card-head"><div><h2>가족</h2><span class="hint">"가족 일정" 업무를 함께 봅니다.</span></div></div>
+        <div id="familyStatus" class="status"></div>
+        <div id="familyBody"></div>
+      </article>
+      <article class="card">
         <div class="card-head"><h2>이번 주 마감</h2><span class="hint">7일 안에 처리할 일</span></div>
         <div id="weekTasks" class="tasks"></div>
       </article>
-      <article class="card wide market-card">
+      <article class="card wide market-card" hidden>
         <div class="card-head"><div><h2>축산물 시세</h2><span class="hint">양돈 · 한우 · 산란 · 육계 현황 및 추이</span></div><button id="refreshMarket" class="tool">새로고침</button></div>
         <div id="marketStatus" class="market-status"></div>
         <div id="marketGrid" class="market-grid"></div>
         <div class="footnote">공식 KAMIS 가격정보 API를 우선 조회하고, 브라우저 제한이나 인증 제한이 있으면 공식 페이지로 안내합니다.</div>
       </article>
-      <article class="card wide investment-card">
+      <article class="card wide investment-card" hidden>
         <div class="card-head">
           <div><h2>투자 지표 조회</h2><span class="hint">시장 체온 · 수급 · 공시 · 실적 · 거시 지표</span></div>
           <button id="openMarketDashboard" class="tool">KRX 열기</button>

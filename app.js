@@ -1,10 +1,12 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
-import { iso } from './lib.js';
-import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay } from './ui.js';
+import { iso, isValidFamilyCode, rpcErrorMessage } from './lib.js';
+import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask, notifyDue } from './tasks.js';
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
+import { loadFamily, createFamily, joinFamily, leaveFamily, regenerateCode, renameMe, defaultDisplayName } from './family.js';
+import { loadSettings, setShowMarket } from './settings.js';
 
 async function handleTaskAction(e) {
   const action = e.target.dataset.action;
@@ -28,6 +30,37 @@ async function onAddProject() {
   renderProjects();
 }
 
+async function handleFamilyAction(e) {
+  const id = e.target.id;
+  if (!id) return;
+  const name = defaultDisplayName(state.user);
+  let err = null;
+  if (id === 'createFamily') err = await createFamily(name);
+  else if (id === 'joinFamily') {
+    const code = $('#joinCode').value;
+    if (!isValidFamilyCode(code)) return alert('코드는 6자리입니다.');
+    err = await joinFamily(code, name);
+  }
+  else if (id === 'renameMe') err = await renameMe($('#myName').value);
+  else if (id === 'regenCode') err = await regenerateCode();
+  else if (id === 'leaveFamily') {
+    if (!confirm('가족에서 나갈까요? 가족 일정이 더 이상 보이지 않습니다.')) return;
+    err = await leaveFamily();
+  }
+  else return;
+  if (err) return alert(rpcErrorMessage(err));
+  await load();          // 가족 업무가 들어오거나 빠진다
+  renderFamily();
+  applyMarketVisibility();
+}
+
+async function onToggleMarket() {
+  const err = await setShowMarket(!state.settings.showMarket);
+  if (err) return alert(err.message || '설정을 저장하지 못했습니다.');
+  applyMarketVisibility();
+  if (state.settings.showMarket) { renderInvestment(); loadMarket(); }
+}
+
 let started = false;
 
 async function start() {
@@ -44,14 +77,18 @@ async function start() {
   $('#app').hidden = false;
   const projErr = await loadProjects();
   setProjectStatus(projErr ? '프로젝트 동기화 준비 중: Supabase SQL 마이그레이션이 필요합니다.' : '');
+  const famErr = await loadFamily();
+  setFamilyStatus(famErr ? '가족 정보를 불러오지 못했습니다. SQL 마이그레이션을 확인해 주세요.' : '');
+  await loadSettings();
   await load();
   const migErr = await migrateLocalProjects();
   if (migErr) setProjectStatus('프로젝트 목록을 옮기지 못했습니다. 새로고침 후 다시 시도해 주세요.');
   const fixErr = await ensureFixedProjects();
   if (fixErr) setProjectStatus('기본 프로젝트를 만들지 못했습니다. 새로고침 후 다시 시도해 주세요.');
   renderProjects();
-  renderInvestment();
-  loadMarket();
+  renderFamily();
+  applyMarketVisibility();
+  if (state.settings.showMarket) { renderInvestment(); loadMarket(); }
 }
 
 $('#googleLogin').onclick = async () => {
@@ -78,6 +115,11 @@ $('#toggleDone').onclick = () => { settings.hideDone = !settings.hideDone; rende
 $('#darkMode').onclick = () => { settings.dark = !settings.dark; render(); };
 $('#notifyDue').onclick = notifyDue;
 $('#addProject').onclick = onAddProject;
+$('#familyBody').addEventListener('click', handleFamilyAction);
+$('#familyBody').addEventListener('keydown', e => {
+  if (e.target.id === 'joinCode' && e.key === 'Enter') { e.preventDefault(); $('#joinFamily')?.click(); }
+});
+$('#toggleMarket').onclick = onToggleMarket;
 $('#refreshMarket').onclick = loadMarket;
 $('#openMarketDashboard').onclick = () => window.open('https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd?vsView=Y', '_blank', 'noopener');
 $('#searchStock').onclick = renderStockLinks;
