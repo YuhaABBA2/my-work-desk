@@ -58,7 +58,7 @@ async function onToggleMarket() {
   const err = await setShowMarket(!state.settings.showMarket);
   if (err) return alert(err.message || '설정을 저장하지 못했습니다.');
   applyMarketVisibility();
-  if (state.settings.showMarket) { renderInvestment(); loadMarket(); }
+  if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); }
 }
 
 let started = false;
@@ -88,7 +88,7 @@ async function start() {
   renderProjects();
   renderFamily();
   applyMarketVisibility();
-  if (state.settings.showMarket) { renderInvestment(); loadMarket(); }
+  if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); }
 }
 
 $('#googleLogin').onclick = async () => {

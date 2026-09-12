@@ -167,3 +167,24 @@ create policy work_tasks_update on public.work_tasks for update to authenticated
 drop policy if exists work_tasks_delete on public.work_tasks;
 create policy work_tasks_delete on public.work_tasks for delete to authenticated
   using (user_id = (select auth.uid()) or family_id in (select public.my_family_ids()));
+
+-- ---------- 가족 공유 보안 보강 (리뷰 반영) ----------
+-- 1) RPC/도우미는 로그인 사용자만. Supabase 기본 권한이 anon 에도 EXECUTE 를 주므로 명시적으로 회수한다.
+revoke execute on function public.my_family_ids() from anon;
+revoke execute on function public.create_family(text, text) from anon;
+revoke execute on function public.join_family(text, text) from anon;
+
+-- 2) work_tasks.user_id 는 바꿀 수 없다 (작성자 고정). 컬럼 단위 UPDATE 권한으로 막는다.
+revoke update on public.work_tasks from authenticated;
+grant update (title, task_date, end_date, priority, project, task_time, remind_1h, remind_1d, note, done, series_id, family_id, updated_at)
+  on public.work_tasks to authenticated;
+
+-- 3) family_members 는 표시 이름만 고칠 수 있다 (family_id 갈아타기 금지).
+revoke update on public.family_members from authenticated;
+grant update (display_name) on public.family_members to authenticated;
+
+-- 4) 가족을 나간 뒤에도 본인이 만든 업무는 계속 고칠 수 있어야 한다.
+drop policy if exists work_tasks_update on public.work_tasks;
+create policy work_tasks_update on public.work_tasks for update to authenticated
+  using (user_id = (select auth.uid()) or family_id in (select public.my_family_ids()))
+  with check (user_id = (select auth.uid()) or family_id is null or family_id in (select public.my_family_ids()));

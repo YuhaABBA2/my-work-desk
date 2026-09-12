@@ -102,11 +102,13 @@ export function renderFamily() {
 
 // 시세·투자 패널은 계정 설정으로, 토글 버튼은 관리자(또는 가족 없음)에게만.
 export function applyMarketVisibility() {
-  const on = !!state.settings.showMarket;
+  // 구성원(관리자 아님)에게는 설정과 무관하게 패널·토글 모두 숨긴다.
+  const canSee = !state.family || state.family.isAdmin;
+  const on = canSee && !!state.settings.showMarket;
   $('.market-card').hidden = !on;
   $('.investment-card').hidden = !on;
   const btn = $('#toggleMarket');
-  btn.hidden = !(!state.family || state.family.isAdmin);
+  btn.hidden = !canSee;
   btn.textContent = on ? '시세·투자 숨기기' : '시세·투자 보기';
 }
 
