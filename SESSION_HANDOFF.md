@@ -1,192 +1,144 @@
-# My Work Desk 세션 인수인계
+# 우리집 데스크 — 세션 인수인계
 
-이 문서는 새 Codex 세션에서 `YuhaABBA2/my-work-desk` 작업을 바로 이어가기 위한 요약입니다.
+새 세션에서 `YuhaABBA2/my-work-desk` 작업을 바로 이어가기 위한 요약. (마지막 갱신: 2026-09-12)
 
 ## 현재 저장소/배포
 
-- GitHub 저장소: `YuhaABBA2/my-work-desk`
-- 로컬 작업 폴더: `C:\Projects2\my-work-desk-github`
-- 프로덕션 URL: `https://my-work-desk.vercel.app/`
-- Vercel은 GitHub `main` 브랜치 push 후 자동 배포됨
-- Supabase 프로젝트는 이미 연결되어 있음
-- `work_tasks` 테이블과 RLS 설정은 이미 적용됨
-- Supabase publishable key는 코드에 들어있지만, service_role 키는 절대 사용하거나 요청하지 말 것
+- 앱 이름: **우리집 데스크** (구 "나의 업무판")
+- GitHub 저장소: `YuhaABBA2/my-work-desk` (main 자동 배포)
+- 로컬 폴더: `C:\Projects2\my-work-desk-github`
+- 프로덕션: `https://my-work-desk.vercel.app/`
+- Supabase 프로젝트: `skihcfyndumifhaxamas` (pig-farm-log와 공유)
+- 알림 발송용 서버는 **pig-farm-log** (`C:\Projects2\pig-farm-log`, https://masan-farm.vercel.app)
 
-## 중요한 운영 원칙
+## 운영 원칙 (Global Constraints)
 
-- service_role 키를 코드, 문서, 대화에 넣지 않는다.
-- 기존 Supabase 프로젝트의 다른 앱/데이터와 섞이지 않게 `work_tasks`와 현재 RLS 정책 범위에서만 작업한다.
-- Google OAuth Provider의 비밀값은 사용자가 Google Cloud와 Supabase Dashboard에서 직접 관리한다.
-- `work_tasks` RLS는 "본인 또는 내 가족(`family_id`)". `create_family`/`join_family`는 security definer RPC(로그인 사용자만). `work_tasks.user_id`·`family_members.family_id`는 컬럼 권한으로 변경 불가.
-- 정적 Vercel 배포이므로 브라우저에서 직접 호출하기 어려운 기관 API는 공개 링크/안전한 프록시 구조로 접근한다.
+- service_role 키를 코드·문서·대화에 절대 두지 않는다. 브라우저는 publishable key(`sb_publishable_…`)만.
+- 다른 앱과 같은 Supabase 프로젝트를 쓰므로 `work_tasks`·`work_projects`·`families`·`family_members`·`work_settings`·`push_subscriptions`·`notification_log` 외에는 건드리지 않는다. `pig_price`는 읽기만 허용됨.
+- `work_tasks` RLS는 **"본인 또는 내 가족(`family_id`)"**. `create_family`/`join_family`는 security definer RPC(로그인 사용자만). `work_tasks.user_id`·`family_members.family_id`는 컬럼 권한으로 변경 불가.
+- 정적 Vercel 배포 — 브라우저에서 못 부르는 API는 pig-farm-log 서버 함수(또는 크론)로.
+- **pig-farm-log push 시 커밋 author 이메일은 `jskim1@woosung.kr` 이어야 Vercel 자동 배포됨**. `bethebrave91@gmail.com`으로 push된 커밋은 "member of Vercel team이 아님"으로 거부됨(2026-09-12 확인).
+- **Vercel Hobby 플랜은 크론 하나가 하루 1회 초과 스케줄이면 배포 자체가 실패**. `notify-tasks`는 GitHub Actions로 옮겼음.
 
-## 주요 작업 내역
+## 현재 기능
 
-### 루트 앱 전환
+### 업무·일정 (work-desk)
 
-- `/`에서 예전 로컬 전용 화면 대신 로그인형 업무판이 뜨도록 변경했다.
-- `cloud.html`은 `/`로 이동하는 리다이렉트 페이지가 됐다.
-- `vercel.json`에는 캐시 문제를 줄이기 위한 정적 배포 설정이 적용되어 있다.
+- Google 로그인, 계정별 데이터. `work_tasks`에 저장.
+- 오늘 카드, 이번 주 마감(마감일 기준), 월간 캘린더(기간 일정은 모든 칸에 표시, 3개 이상이면 `+N`).
+- 폼은 **모달 다이얼로그**. 헤더 `+ 추가` 버튼, 폰에서는 오른쪽 아래 FAB.
+- 필드: 제목, 시작일, **종료일(선택)**, 시간(5분 단위) + **하루종일** 체크, 우선순위, 프로젝트(select), 반복(없음/매일/매주/매월, 없음이면 횟수칸 숨김), **알림 시점**(1시간 전 / 하루 전), **가족과 공유**(가족 있으면 표시. "가족 일정" 프로젝트면 자동 켜지고 잠금), 메모.
+- 캘린더 날짜 클릭 → 그 날짜로 다이얼로그 열림. 편집 버튼 → 채워진 다이얼로그.
+- 반복 일정은 `series_id`로 묶이고, 수정·삭제 시 **"이 일정만 / 이후 모두"** 선택(앱 내 `<dialog>`).
+- 완료 체크, 완료 숨김, 다크모드.
 
-### 로그인/동기화
+### 프로젝트
 
-- Google 로그인은 Supabase Auth 기반이다.
-- 로그인 후 `work_tasks`에 업무/일정을 저장한다.
-- 사용자별 RLS 기준으로 로그인한 계정의 데이터만 보이도록 전제하고 있다.
+- `work_projects` 테이블에 계정별 저장. 최초 로그인 시 localStorage에서 1회 이관, 없으면 고정 3개 자동 생성.
+- **고정 3개**: 회사 업무 · 개인 일정 · 가족 일정 (삭제 불가). 사용자 프로젝트 추가/삭제 가능.
+- **색상**: 이름에서 결정(고정 3개는 지정색, 나머지는 해시로 팔레트 5색). 체크박스 테두리, 캘린더 점, 칩 앞 점에 반영.
 
-### PWA/아이콘
+### 가족 공유
 
-- `site.webmanifest` 추가.
-- 홈 화면 추가용 아이콘 추가:
-  - `icons/work-desk-icon.svg`
-  - `icons/work-desk-icon-180.png`
-  - `icons/work-desk-icon-192.png`
-  - `icons/work-desk-icon-512.png`
-- 아이콘 컨셉은 대장간/스미스 느낌이다.
+- 초대 코드 6자로 두 계정을 묶음(`families`/`family_members` + `create_family`·`join_family` RPC).
+- "가족 일정" 프로젝트 업무는 자동 공유. **"가족과 공유"** 체크박스로 다른 프로젝트도 공유 가능(→ `family_id` 세팅).
+- 로그인 시 자기 "가족 일정"/"가족일정"(띄어쓰기 무관) 업무 중 `family_id`가 null인 것을 소급 태그.
+- 카드: 구성원 목록(만든 계정에 **"가장"** 뱃지), 표시 이름 수정, 가장은 초대 코드 재발급, 구성원은 나가기.
+- 남이 만든 가족 업무는 카드 메타 끝에 작성자 이름 표시.
 
-### UI 개선
+### 시세·투자 패널 (관리자 전용)
 
-- Apple스럽고 단순한 업무판 UI로 정리했다.
-- CSS는 `styles.css`, 앱 로직은 `app.js`로 분리했다.
-- 다크모드 토글이 있다.
+- `work_settings.show_market` 계정별 설정. 기본 꺼짐.
+- 툴바 토글 표시 조건: 가족이 없거나 가족의 가장. 구성원에겐 토글·패널 모두 없음.
+- 축산물 시세 카드:
+  - **양돈** = `pig_price` 실데이터. 등외제외, 헤드라인 + 14일 스파크라인 + 전일/전주/전년 대비.
+  - 한우 / 산란 / 육계 = 축산유통정보 다봄 링크(fallback). 실데이터는 다음 스펙.
+- 투자 지표 카드: 공식 조회 페이지 링크 허브.
 
-### 업무/일정 기능
+### 푸시 알림 (구독은 라이브, 발송은 CRON_SECRET 등록 후)
 
-현재 구현된 기능:
+- 서비스워커 `sw.js` 등록. `notify.js`가 VAPID 공개키로 구독 → `push_subscriptions` 저장.
+- 발송: **pig-farm-log** `/api/cron/notify-tasks` (GitHub Actions 매 15분 curl).
+- `remind_1h`(시간 있는 업무만, 목표 시각 60분 전), `remind_1d`(전날 09:00 KST) 트리거.
+- 같은 (task, user, kind)는 `notification_log`로 한 번만 발송.
+- **VAPID_PUBLIC_KEY**(공개), **VAPID_PRIVATE_KEY**(비밀), **VAPID_SUBJECT**(mailto:) 는 pig-farm-log Vercel env에 있음.
+- GitHub Actions는 `secrets.CRON_SECRET`로 endpoint를 부름. 이 시크릿을 GH `pig-farm-log` 저장소에 Vercel의 CRON_SECRET과 같은 값으로 등록해야 발송이 산다.
 
-- 일정/업무 추가
-- 일정 수정
-- 일정 삭제
-- 완료 체크
-- 완료한 일 숨기기/보기
-- 날짜 클릭 후 해당 날짜 일정 추가
-- 반복 일정 생성
-  - 매일
-  - 매주
-  - 매월
-  - 최대 24회
-- 프로젝트/카테고리 관리
-- 오늘 해야 할 일
-- 이번 주 마감
-- 월간 캘린더
-- 마감 임박 표시
-- 브라우저 알림 버튼
-- 프로젝트 목록은 Supabase `work_projects`로 동기화 (localStorage에서 1회 이관)
-- 반복 일정은 `series_id`로 묶이며, 수정·삭제 시 "이 일정만 / 이후 모두" 선택 (`<dialog>`)
-- 시간 입력은 5분 단위(`step="300"`)
-- 기간 일정(시작일~종료일, `end_date`), 하루종일(`task_time null`), 알림 시점(`remind_1h`/`remind_1d`, 저장만 — 발송은 다음 스펙)
-- 고정 프로젝트 3개(회사 업무·개인 일정·가족 일정, 삭제 불가, 로그인 시 자동 생성) + 프로젝트별 색상(이름 해시, 체크박스 테두리·캘린더 점)
-- 반복 "없음"이면 횟수칸 숨김(CSS `:has`). 캘린더 칸은 2개 + "+N"
-- 기존 업무 중 시간이 없던 것은 이제 "하루종일"로 표시된다
-- 가족 공유: 초대 코드로 계정을 묶고 "가족 일정" 프로젝트 업무만 공유(둘 다 수정·완료·삭제). 작성자 이름 표시. 가족을 만든 계정이 관리자
-- 시세·투자 패널은 계정 설정(`work_settings.show_market`, 기본 꺼짐). 토글은 가족 관리자(또는 가족 없음)에게만. 구성원에겐 패널·토글 없음
+## 파일 구조 (work-desk)
 
-### 축산물 시세
+- `index.html`: 루트 앱 + `<dialog id="taskDialog">`(폼) + `<dialog id="seriesDialog">`(반복 선택)
+- `cloud.html`: 루트 리다이렉트
+- `app.js`: 진입점, 이벤트 바인딩, `start()`
+- `lib.js`: 순수 함수 (`node --test`)
+- `state.js`: 공유 상태 + localStorage 설정
+- `supabase.js`: 클라이언트
+- `ui.js`: 화면, `renderFamily`, `applyMarketVisibility`, dialog 유틸
+- `tasks.js`: `work_tasks` CRUD, 반복, 시리즈 분기
+- `projects.js`: `work_projects` CRUD, 이관, 고정 프로젝트
+- `family.js`: 가족 CRUD, `loadFamily` 소급 태그
+- `settings.js`: `work_settings` (show_market)
+- `market.js`: 시세 카드(`pig_price` 실데이터) + 투자 링크
+- `notify.js`: 푸시 구독/해제, VAPID 공개키
+- `sw.js`: 서비스워커 (push/notificationclick)
+- `styles.css`: 초록/카키/연두 팔레트 (`--blue`=`#2f7a3d`), 다크모드, dialog·FAB·spark-svg
+- `icons/`: 나무 + 가족 아이콘(SVG + 180/192/512 PNG)
+- `site.webmanifest`: PWA (name "우리집 데스크", short "우리집")
+- `supabase-setup.sql`: 모든 테이블·RLS·RPC 참고 SQL
+- `vercel.json`: 정적 배포 + `/` 캐시 무시
+- `tests/lib.test.mjs`: 순수 함수 테스트 (2026-09-12 기준 23개 pass)
+- `docs/superpowers/specs/`, `docs/superpowers/plans/`: 오늘 진행한 스펙·계획
 
-- 축산물 시세 카드 추가.
-- 대상:
-  - 양돈
-  - 한우
-  - 산란
-  - 육계
-- KAMIS 가격정보 API 조회를 시도한다.
-- 브라우저 제한이나 테스트 키 한계가 있으면 공식 페이지 안내로 fallback한다.
-- 상세 실시간 데이터를 안정적으로 앱 안에 넣으려면 추후 서버리스 프록시/API 키 구조가 필요하다.
+## 파일 구조 (pig-farm-log — 알림·시세 서버측)
 
-### 투자 지표 조회
-
-투자 지표 조회 카드 추가.
-
-종목명/종목코드/키워드를 입력하면 관련 공식/참고 페이지 링크를 만든다.
-
-포함된 링크:
-
-- KRX 정보데이터시스템
-- DART 전자공시
-- KIND
-- 네이버페이증권
-- FnGuide
-- 한국은행 ECOS
-- KOSIS
-- FRED
-- TradingView
-
-목적별 지표 카드:
-
-- 시장 전체 체온
-- 수급
-- 개별 기업 원문
-- 거래소 공시/상장 이슈
-- 실적·컨센서스
-- 금리·환율·유동성
-- 국내 경기
-- 정책/규제
-- 글로벌 압력
-
-현재는 정적 앱에서 안전하게 동작하도록 공식 조회 허브/링크 중심으로 구현되어 있다. 실시간 수치 자체를 앱 내부에 직접 표시하려면 기관별 API 인증키와 서버리스 프록시가 필요하다.
+- `app/api/cron/notify-tasks/route.ts`: work_tasks 순회 → push_subscriptions 로 발송 → notification_log 기록. `CRON_SECRET` 필요.
+- `app/api/cron/pig-price/route.ts`: 축평원 돼지 도매가 수집(기존).
+- `.github/workflows/notify-tasks.yml`: 매 15분 curl (Vercel Hobby cron 제약 우회).
+- `vercel.json`: notify-tasks는 여기 없음. 있으면 배포 실패.
 
 ## 2026-09-12 세션에서 알게 된 함정
 
-- Supabase Auth의 Site URL이 옛 배포 스냅샷 주소로 남아 있으면 로그인 후 옛 코드로 튕긴다. Site URL/Redirect URLs는 `https://my-work-desk.vercel.app` 기준.
-- `.overlay{display:grid}`가 `[hidden]`을 덮어써 로그인 후에도 오버레이가 남았던 적이 있다 → `.overlay[hidden]{display:none}` 유지.
-- Chrome 152에서 `<dialog>`의 `close` 이벤트가 오지 않는 경우가 있어 `askSeriesScope`는 form `submit`/`cancel`로 판정한다.
-- iOS Safari의 date/time 입력은 고유 min-width가 있어 `min-width:0` + `appearance:none`이 필요하다.
+1. Supabase Auth의 Site URL이 옛 배포 스냅샷 주소면 로그인 후 옛 코드로 튕긴다. Site URL/Redirect URLs는 `https://my-work-desk.vercel.app`.
+2. `.overlay{display:grid}`가 `[hidden]`을 덮으면 로그인 후 오버레이가 안 사라진다 → `.overlay[hidden]{display:none}` 필수.
+3. Chrome 152에서 `<dialog>`의 `close` 이벤트가 안 오는 경우가 있다. 선택 판정은 form `submit`/`cancel`로. (`askSeriesScope`)
+4. iOS Safari의 date/time 입력은 고유 min-width가 있어 `min-width:0` + `appearance:none` 필요.
+5. 캘린더 셀이 긴 제목 때문에 화면보다 넓어짐 → `grid-template-columns: repeat(7, minmax(0,1fr))` + `.day{min-width:0;overflow:hidden}`.
+6. Claude-in-Chrome의 `javascript_tool`은 페이지에 modal dialog가 열리면 CDP evaluate가 45s 타임아웃되기 쉽다. 결과는 다음 호출에서 상태를 읽어 회수.
+7. `crypto.randomUUID()`는 secure context(HTTPS/localhost)에서만 동작.
+8. **pig-farm-log의 GitHub push는 `jskim1@woosung.kr` author 이메일이 아니면 Vercel이 배포 안 함** (yuhaABBA GitHub 계정이 Vercel `jisoo kim's projects` 팀 멤버가 아니어서). 로컬에서 `git config user.email` 확인 필수.
+9. **Vercel Hobby는 한 크론이 하루 1회 초과면 배포 자체 실패.** 여러 번 실행이 필요한 크론은 GitHub Actions로.
+10. Vercel Dashboard의 시크릿 등록은 자동 모드가 막는다(Secret-Store Writes). 사용자가 직접.
+11. Supabase Dashboard SQL Editor는 편집기에 타이핑 + Run 클릭이 통과됨. 자동 모드가 `javascript_tool`로 SQL 문자열을 주입하는 것은 막힘.
 
-## 다음 스펙 후보 (사용자 요청 순)
+## 지금 열린 항목 (우선순위 순)
 
-1. 폼 모달화: "업무·일정 추가" 폼을 버튼 + `<dialog>`로 (폰에서 폼이 화면을 너무 차지함). 캘린더 날짜 클릭/수정 버튼도 모달을 연다
-2. 푸시 알림 발송: 저장된 알림 시점에 폰에서 울리게 (Web Push + 크론)
-3. 축산 시세 수치화: `livestock_price` + 한우 크론(pig-farm-log), `pig_price` 읽기. 육계·계란은 산지가 API가 없어 2단계
+1. **CRON_SECRET을 GitHub `pig-farm-log` 저장소 시크릿으로 등록** — 이거만 하면 푸시 알림 라이브. Vercel과 같은 값이어야 함. https://github.com/YuhaABBA2/pig-farm-log/settings/secrets/actions
+2. 한우 실시간 시세 (축평원 `/user/grade/auct/cattle` API). 새 크론 `/api/cron/cattle-price` + `cattle_price` 테이블 or 확장. 응답 구조가 돼지와 다르니 실제 응답 보고 반복 필요.
+3. 육계·계란 산지가격 — ekapepia 스크래핑(불안정) 또는 협회 사이트. 별도 스펙.
+4. 모바일 캘린더 주간 뷰(더 촘촘).
+5. 알림 발송 안정성 모니터링 (실패 로그 대시보드, dead subscription cleanup 반복).
 
-## 최근 커밋
+## 최근 커밋 (work-desk)
 
-- `d8d91b6 feat: add investment indicator hub`
-- `2384be9 feat: expand work desk planning tools`
-- `fb675f0 style: make app icon forge themed`
-- `b79f88b feat: add pwa home screen icons`
-- `7d249ee style: refine work desk interface`
-- `c418efe fix: prevent stale root html cache`
+- `8f04b87` 시세 카드에 실제 돼지 도매가
+- `3684f6c` 초록/카키/연두 팔레트
+- `8f040a5` 앱 이름 "우리집 데스크" + 아이콘
+- `13a14be` 로그인 시 가족 일정 소급 태그
+- `93e5e99` 가족과 공유 태그
+- `490437f` "관리자" → "가장"
+- `b8c8792` 가족 공유 보안 4건
+- `946f0bc` 가족 카드 + 시세·투자 토글
+- `5948916` 폼을 모달 다이얼로그로
+- `b7f4a65` Web Push 구독 클라이언트
 
-## 마지막 검증 결과
+## 최근 커밋 (pig-farm-log)
 
-최근 검증 기준:
+- `975d5d9` notify-tasks 크론을 GitHub Actions로
+- `f926c88` 재배포 (author fix)
+- `e39e898` 우리집 데스크 알림 발송 크론
 
-- `node --check app.js` 통과
-- `git diff --check` 통과
-- 로컬 정적 서버에서 `/`, `/app.js`, `/styles.css` 200 확인
-- 브라우저 콘솔 에러 0개 확인
-- Vercel 프로덕션 배포 성공 확인
-- 프로덕션 URL에서 투자 섹션 반영 확인
+## 마지막 검증
 
-최근 Vercel deployment:
-
-- `6402827049`
-- commit: `d8d91b6`
-- state: `success`
-
-## 주요 파일 구조
-
-- `index.html`: 루트 앱 화면
-- `cloud.html`: 루트로 리다이렉트
-- `app.js`: 진입점 (ES module). 이벤트 바인딩과 `start()`
-- `lib.js`: DOM/Supabase 의존 없는 순수 함수. `npm test`(`tests/lib.test.mjs`)로 검증
-- `state.js`: 공유 상태와 localStorage 설정(다크모드, 완료 숨김)
-- `supabase.js`: Supabase 클라이언트 (publishable key만)
-- `ui.js`: 화면 그리기, 폼, 시리즈 선택 dialog(`askSeriesScope`)
-- `tasks.js`: `work_tasks` CRUD, 반복 생성(series_id), "이 일정만/이후 모두"
-- `projects.js`: `work_projects` CRUD, localStorage → Supabase 1회 이관
-- `market.js`: 축산 시세 자리표시자 + 투자 링크
-- `package.json`: `"type": "module"`, `npm test`. 빌드 없음 (Vercel Framework Preset: Other)
-- `styles.css`: 전체 UI 스타일과 다크모드
-- `site.webmanifest`: PWA 설정
-- `icons/`: 홈 화면 아이콘
-- `supabase-setup.sql`: Supabase 테이블/RLS 참고 SQL
-- `vercel.json`: Vercel 정적 배포 설정
-
-## 다음에 하면 좋은 일
-
-- 투자 지표를 실제 수치 카드로 확장할 경우 서버리스 API 프록시 설계
-- KRX/KOSIS/ECOS/DART Open API 키를 안전하게 다룰 환경 변수 구조 추가
-- 축산물 시세도 공식 API 키 기반으로 안정화
-- 모바일 캘린더 주간 뷰를 더 촘촘하게 개선
-
+- `npm test` 23/23 pass
+- `node --check` 모든 모듈 clean
+- 브라우저 콘솔 에러 0개 (라이트/다크, 로그인 유/무, 데스크톱/폰 시뮬)
+- 2계정 검증(가족 만들기·참여·공유·수정·완료·나가기·RLS steal 시도 거부)
