@@ -134,9 +134,8 @@ $('#setMarket').addEventListener('change', async e => {
   if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); }
 });
 $('#pushToggleBtn').onclick = async () => { await onNotifyToggle(); };
-// 가족 코드 공유 (초대 카드에서 delegated)
-$('#familyBody').addEventListener('click', async (e) => {
-  if (e.target.id !== 'shareCode') return;
+// 가족 초대 코드 공유 / 재발급 — 설정 다이얼로그의 버튼
+async function shareFamilyCode() {
   const code = state.family?.code; if (!code) return;
   const msg = `우리집 데스크에 초대합니다.
 1) https://my-work-desk.vercel.app 을 열어 Google 로그인
@@ -147,7 +146,15 @@ $('#familyBody').addEventListener('click', async (e) => {
     if (navigator.share) await navigator.share({ title: '우리집 데스크 가족 초대', text: msg });
     else { await navigator.clipboard.writeText(msg); alert('초대 메시지를 복사했습니다. 카톡 등으로 붙여넣으세요.'); }
   } catch (_) { /* 사용자 취소 */ }
-});
+}
+$('#settingsShareCode').onclick = shareFamilyCode;
+$('#settingsRegenCode').onclick = async () => {
+  if (!confirm('초대 코드를 새로 발급할까요? 기존 코드로는 참여할 수 없게 됩니다.')) return;
+  const err = await regenerateCode();
+  if (err) return alert('코드를 재발급하지 못했습니다.');
+  $('#settingsInviteCode').textContent = state.family.code;
+  renderFamily();
+};
 $('#addForm').addEventListener('submit', saveTask);
 $('#todayTasks').addEventListener('click', handleTaskAction);
 $('#todayTasks').addEventListener('change', handleTaskAction);

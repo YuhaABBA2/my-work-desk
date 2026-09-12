@@ -102,9 +102,7 @@ export function renderFamily() {
     `<li>${memberAvatar(m)}<span class="m-name">${esc(m.name)}</span>${m.userId === f.ownerId ? ' <span class="badge repeat">가장</span>' : ''}${m.userId === state.user.id ? ' <span class="hint">(나)</span>' : ''}</li>`
   ).join('')}</ul>
     <div class="project-add"><input id="myName" maxlength="30" value="${esc(me?.name || '')}" placeholder="내 표시 이름"><button id="renameMe" class="tool">저장</button></div>
-    ${f.isAdmin
-      ? `<div class="code-line">초대 코드 <b class="code">${esc(f.code)}</b><button id="regenCode" class="text-button">재발급</button><button id="shareCode" class="text-button">공유</button></div>`
-      : `<button id="leaveFamily" class="text-button">가족 나가기</button>`}`;
+    ${f.isAdmin ? '' : '<button id="leaveFamily" class="text-button">가족 나가기</button>'}`;
 }
 
 // 시세·투자 패널은 계정 설정으로, 토글 버튼은 관리자(또는 가족 없음)에게만.
@@ -263,12 +261,19 @@ export function renderProfile() {
 }
 
 export function openSettingsDialog() {
-  // Refresh checkboxes from live state each open
+  // Refresh from live state each open
   $('#setHideDone').checked = !!settings.hideDone;
   $('#setDark').checked = !!settings.dark;
   $('#setMarket').checked = !!state.settings.showMarket;
   const canSeeMarket = !state.family || state.family.isAdmin;
   $('#setMarketRow').hidden = !canSeeMarket;
+  // 가족 초대 섹션은 내가 가장일 때만.
+  const inviteSection = $('#familyInviteSection');
+  if (inviteSection) {
+    const showInvite = !!(state.family && state.family.isAdmin);
+    inviteSection.hidden = !showInvite;
+    if (showInvite) $('#settingsInviteCode').textContent = state.family.code;
+  }
   $('#settingsDialog').showModal();
 }
 export function closeSettingsDialog() {
