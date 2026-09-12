@@ -3,7 +3,7 @@ import { state, settings, today } from './state.js';
 import { iso } from './lib.js';
 import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask, notifyDue } from './tasks.js';
-import { loadProjects, addProject, deleteProject } from './projects.js';
+import { loadProjects, addProject, deleteProject, migrateLocalProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
 
 async function handleTaskAction(e) {
@@ -41,6 +41,9 @@ async function start() {
   const projErr = await loadProjects();
   setProjectStatus(projErr ? '프로젝트 동기화 준비 중: Supabase SQL 마이그레이션이 필요합니다.' : '');
   await load();
+  const migErr = await migrateLocalProjects();
+  if (migErr) setProjectStatus('프로젝트 목록을 옮기지 못했습니다. 새로고침 후 다시 시도해 주세요.');
+  renderProjects();
   renderInvestment();
   loadMarket();
 }

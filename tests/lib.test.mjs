@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { iso, parseIso, occurrenceDates, repeatLabel, esc, sortTasks } from '../lib.js';
+import { iso, parseIso, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames } from '../lib.js';
 
 test('parseIso → iso 왕복', () => {
   assert.equal(iso(parseIso('2026-09-12')), '2026-09-12');
@@ -38,4 +38,13 @@ test('sortTasks: 날짜 → 시간 순', () => {
   const b = { date: '2026-09-12', time: '' };
   const c = { date: '2026-09-11', time: '23:00' };
   assert.deepEqual([a, b, c].sort(sortTasks), [c, b, a]);
+});
+
+test('mergeProjectNames: 로컬 우선, 업무에서 온 이름 추가, 중복·빈값 제거', () => {
+  assert.deepEqual(
+    mergeProjectNames(['회사 업무', '개인 일정'], ['개인 일정', null, '  ', '농장', '회사 업무']),
+    ['회사 업무', '개인 일정', '농장']
+  );
+  assert.deepEqual(mergeProjectNames([], []), []);
+  assert.deepEqual(mergeProjectNames([' 공백 '], []), ['공백']);
 });

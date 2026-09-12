@@ -34,3 +34,8 @@ export function occurrenceDates(startIso, repeat, count) {
     return startIso;
   });
 }
+
+// 1회 이관용: 이 기기의 localStorage 목록 + 업무에 실제 쓰인 이름. 순서 유지, 공백 정리, 중복 제거.
+export function mergeProjectNames(local, fromTasks) {
+  return [...new Set([...local, ...fromTasks].map(s => String(s || '').trim()).filter(Boolean))];
+}
