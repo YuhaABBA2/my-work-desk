@@ -68,11 +68,11 @@ export function render() {
   $('#dueAlerts').innerHTML = dueSoon.length ? `<div class="alert">마감 임박 ${dueSoon.length}건: ${esc(dueSoon.slice(0, 3).map(t => t.title).join(', '))}</div>` : '';
 
   // 가족 일정 카드: family_id 가 있는 업무만 (spansDay 오늘 또는 이번 주 안 마감).
-  const famCard = $('#familyTasksCard');
-  if (famCard) {
-    if (!state.family) { famCard.hidden = true; }
+  const famBlock = $('#familyTasksBlock');
+  if (famBlock) {
+    if (!state.family) { famBlock.hidden = true; $('#familyTasksCount').textContent = ''; }
     else {
-      famCard.hidden = false;
+      famBlock.hidden = false;
       // "가족 일정 리스트" = 프로젝트가 정확히 "가족 일정"(또는 "가족일정")인 업무만.
       // 다른 프로젝트에 붙인 "가족과 공유" 태그는 inform 목적이라 캘린더에만 표시 (여기 안 옴).
       const famShown = shown.filter(t => isFamilyProject(t.project));

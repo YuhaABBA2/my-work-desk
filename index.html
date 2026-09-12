@@ -52,18 +52,18 @@
         <div id="projectChips" class="chips"></div>
         <div id="projectsView" class="project-list"></div>
       </article>
-      <article class="card">
-        <div class="card-head"><div><h2>가족</h2><span class="hint">"가족 일정" 업무를 함께 봅니다.</span></div></div>
+      <article class="card" id="familyCard">
+        <div class="card-head"><div><h2>가족</h2><span class="hint">함께 보는 "가족 일정"</span></div><span id="familyTasksCount" class="hint"></span></div>
         <div id="familyStatus" class="status"></div>
         <div id="familyBody"></div>
+        <div class="family-tasks-block" id="familyTasksBlock" hidden>
+          <div class="section-head">가족 일정</div>
+          <div id="familyTasks" class="tasks"></div>
+        </div>
       </article>
       <article class="card">
         <div class="card-head"><h2>이번 주 마감</h2><span class="hint">7일 안에 처리할 일</span></div>
         <div id="weekTasks" class="tasks"></div>
-      </article>
-      <article class="card" id="familyTasksCard" hidden>
-        <div class="card-head"><div><h2>가족 일정</h2><span class="hint">둘이 함께 보는 일</span></div><span id="familyTasksCount" class="hint"></span></div>
-        <div id="familyTasks" class="tasks"></div>
       </article>
       <article class="card wide market-card" hidden>
         <div class="card-head"><div><h2>축산물 시세</h2><span class="hint">양돈 · 한우 · 산란 · 육계 현황 및 추이</span></div><button id="refreshMarket" class="tool">새로고침</button></div>
