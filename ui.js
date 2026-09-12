@@ -92,7 +92,7 @@ export function renderFamily() {
   }
   const me = f.members.find(m => m.userId === state.user.id);
   box.innerHTML = `<ul class="members">${f.members.map(m =>
-    `<li><i class="dot-color" style="background:#f0730a"></i>${esc(m.name)}${m.userId === f.ownerId ? ' <span class="badge repeat">관리자</span>' : ''}${m.userId === state.user.id ? ' <span class="hint">(나)</span>' : ''}</li>`
+    `<li><i class="dot-color" style="background:#f0730a"></i>${esc(m.name)}${m.userId === f.ownerId ? ' <span class="badge repeat">가장</span>' : ''}${m.userId === state.user.id ? ' <span class="hint">(나)</span>' : ''}</li>`
   ).join('')}</ul>
     <div class="project-add"><input id="myName" maxlength="30" value="${esc(me?.name || '')}" placeholder="내 표시 이름"><button id="renameMe" class="tool">저장</button></div>
     ${f.isAdmin
