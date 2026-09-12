@@ -48,3 +48,11 @@ alter table public.work_tasks add column if not exists series_id uuid;
 
 create index if not exists work_tasks_user_series_idx
 on public.work_tasks (user_id, series_id);
+
+-- ---------- 기간 · 알림 시점 ----------
+alter table public.work_tasks add column if not exists end_date date;
+alter table public.work_tasks add column if not exists remind_1h boolean not null default false;
+alter table public.work_tasks add column if not exists remind_1d boolean not null default false;
+alter table public.work_tasks drop constraint if exists work_tasks_end_after_start;
+alter table public.work_tasks add constraint work_tasks_end_after_start
+  check (end_date is null or end_date >= task_date);
