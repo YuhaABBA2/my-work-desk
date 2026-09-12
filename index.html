@@ -41,42 +41,12 @@
       <article class="card hero-card">
         <div class="card-head">
           <div><h2>오늘 해야 할 일</h2><span class="hint">급한 일부터 차분히 정리합니다.</span></div>
-          <div class="summary"><div class="stat"><b id="openCount">0</b><span>남은 업무</span></div><div class="stat"><b id="doneCount">0</b><span>완료</span></div></div>
+          <div class="hero-right"><button id="addTaskBtn" class="primary compact">＋ 추가</button><div class="summary"><div class="stat"><b id="openCount">0</b><span>남은 업무</span></div><div class="stat"><b id="doneCount">0</b><span>완료</span></div></div></div>
         </div>
         <div id="dueAlerts" class="alerts"></div>
         <div id="todayTasks" class="tasks"></div>
       </article>
-      <article class="card">
-        <div class="card-head"><h2 id="formTitle">업무 · 일정 추가</h2><button id="cancelEdit" class="text-button" hidden>취소</button></div>
-        <form id="addForm" class="form">
-          <input id="title" required maxlength="200" placeholder="할 일 또는 일정 제목">
-          <div class="form-row">
-            <label class="field"><span>시작일</span><input id="date" type="date" required></label>
-            <label class="field"><span>종료일 (선택)</span><input id="endDate" type="date"></label>
-          </div>
-          <div class="form-row">
-            <input id="time" type="time" step="300">
-            <label class="check-field"><input id="allDay" type="checkbox"> 하루종일</label>
-          </div>
-          <div class="form-row">
-            <select id="priority"><option value="high">중요</option><option value="middle" selected>보통</option><option value="low">여유</option></select>
-            <select id="project" aria-label="프로젝트"></select>
-          </div>
-          <div class="form-row">
-            <select id="repeat"><option value="none" selected>반복 없음</option><option value="daily">매일 반복</option><option value="weekly">매주 반복</option><option value="monthly">매월 반복</option></select>
-            <input id="repeatCount" type="number" min="1" max="24" value="1" title="반복 횟수">
-          </div>
-          <div class="check-row">
-            <span class="hint">알림</span>
-            <label class="check-field"><input id="remind1h" type="checkbox"> 1시간 전</label>
-            <label class="check-field"><input id="remind1d" type="checkbox"> 하루 전</label>
-          </div>
-          <label id="shareFamilyRow" class="check-field" hidden><input id="shareFamily" type="checkbox"> 가족과 공유</label>
-          <textarea id="note" maxlength="1000" placeholder="메모 (선택)"></textarea>
-          <button id="submitTask" class="primary">추가하기</button>
-        </form>
-      </article>
-      <article class="card">
+            <article class="card">
         <div class="card-head"><h2>프로젝트 관리</h2><span class="hint">자주 쓰는 카테고리</span></div>
         <div id="projectStatus" class="status"></div>
         <div class="project-add"><input id="newProject" maxlength="50" placeholder="새 카테고리"><button id="addProject" class="tool">추가</button></div>
@@ -122,6 +92,39 @@
       </article>
     </section>
   </main>
+  <button id="fabAdd" class="fab" aria-label="업무 추가" hidden>＋</button>
+  <dialog id="taskDialog" class="task-dialog">
+    <div class="task-dialog-body">
+      <div class="card-head"><h2 id="formTitle">업무 · 일정 추가</h2><button id="closeTaskDialog" type="button" class="text-button">닫기</button></div>
+      <form id="addForm" class="form">
+          <input id="title" required maxlength="200" placeholder="할 일 또는 일정 제목">
+          <div class="form-row">
+            <label class="field"><span>시작일</span><input id="date" type="date" required></label>
+            <label class="field"><span>종료일 (선택)</span><input id="endDate" type="date"></label>
+          </div>
+          <div class="form-row">
+            <input id="time" type="time" step="300">
+            <label class="check-field"><input id="allDay" type="checkbox"> 하루종일</label>
+          </div>
+          <div class="form-row">
+            <select id="priority"><option value="high">중요</option><option value="middle" selected>보통</option><option value="low">여유</option></select>
+            <select id="project" aria-label="프로젝트"></select>
+          </div>
+          <div class="form-row">
+            <select id="repeat"><option value="none" selected>반복 없음</option><option value="daily">매일 반복</option><option value="weekly">매주 반복</option><option value="monthly">매월 반복</option></select>
+            <input id="repeatCount" type="number" min="1" max="24" value="1" title="반복 횟수">
+          </div>
+          <div class="check-row">
+            <span class="hint">알림</span>
+            <label class="check-field"><input id="remind1h" type="checkbox"> 1시간 전</label>
+            <label class="check-field"><input id="remind1d" type="checkbox"> 하루 전</label>
+          </div>
+          <label id="shareFamilyRow" class="check-field" hidden><input id="shareFamily" type="checkbox"> 가족과 공유</label>
+          <textarea id="note" maxlength="1000" placeholder="메모 (선택)"></textarea>
+          <button id="submitTask" class="primary">추가하기</button>
+        </form>
+    </div>
+  </dialog>
   <dialog id="seriesDialog" class="series-dialog">
     <form method="dialog">
       <h3 id="seriesDialogTitle">반복 일정 수정</h3>

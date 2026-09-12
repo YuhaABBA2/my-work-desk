@@ -164,7 +164,6 @@ export function resetForm() {
   state.editId = null;
   $('#formTitle').textContent = '업무 · 일정 추가';
   $('#submitTask').textContent = '추가하기';
-  $('#cancelEdit').hidden = true;
   $('#repeat').disabled = false;
   $('#repeatCount').disabled = false;
   $('#addForm').reset();
@@ -216,10 +215,10 @@ export function syncShareFamilyForProject() {
 }
 
 export function fillEditForm(t) {
+  $('#taskDialog').showModal();
   state.editId = t.id;
   $('#formTitle').textContent = '업무 · 일정 수정';
   $('#submitTask').textContent = '수정 저장';
-  $('#cancelEdit').hidden = false;
   $('#title').value = t.title;
   $('#date').value = t.date;
   $('#endDate').value = t.endDate || '';
@@ -234,15 +233,27 @@ export function fillEditForm(t) {
   $('#repeat').value = 'none';
   $('#repeat').disabled = true;
   $('#repeatCount').disabled = true;
-  $('#addForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// 업무 폼 다이얼로그. mode='add' 는 폼 초기화, 'edit' 는 fillEditForm 이 먼저 채웠다고 가정.
+export function openTaskDialog(mode = 'add') {
+  if (mode === 'add') resetForm();
+  $('#taskDialog').showModal();
+  setTimeout(() => $('#title').focus(), 0);
+}
+
+export function closeTaskDialog() {
+  const d = $('#taskDialog');
+  if (d.open) d.close();
+  resetForm();
 }
 
 export function selectDate(date) {
   state.selectedDate = date;
-  $('#date').value = date;
   calendar();
+  openTaskDialog('add');
+  $('#date').value = date;
   $('#title').focus();
-  $('#addForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // 시리즈 일정 수정/삭제 범위. 취소·Esc 는 null.

@@ -1,7 +1,7 @@
 import { sb } from './supabase.js';
 import { state, today } from './state.js';
 import { iso, addDays, sortTasks, occurrenceDates, splitSeriesEdit, shiftEndDate, dueDate, familyIdFor } from './lib.js';
-import { $, render, resetForm, fillEditForm, askSeriesScope } from './ui.js';
+import { $, render, resetForm, fillEditForm, askSeriesScope, closeTaskDialog } from './ui.js';
 
 export async function load() {
   const { data, error } = await sb.from('work_tasks').select('*').order('task_date').order('task_time');
@@ -70,7 +70,7 @@ export async function saveTask(e) {
       if (error) return alert('수정하지 못했습니다.');
     }
     await load();
-    resetForm();
+    closeTaskDialog();
     return;
   }
 
@@ -95,7 +95,7 @@ export async function saveTask(e) {
   const { error } = await sb.from('work_tasks').insert(records);
   if (error) return alert('저장하지 못했습니다. Supabase 테이블 설정을 확인해 주세요.');
   await load();
-  resetForm();
+  closeTaskDialog();
 }
 
 export async function toggleTask(id) {

@@ -1,7 +1,7 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
 import { iso, isValidFamilyCode, rpcErrorMessage } from './lib.js';
-import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject } from './ui.js';
+import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask, notifyDue } from './tasks.js';
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
@@ -108,7 +108,9 @@ $('#calendar').addEventListener('click', e => {
   if (day?.dataset.date) selectDate(day.dataset.date);
 });
 $('#projectChips').addEventListener('click', handleTaskAction);
-$('#cancelEdit').onclick = resetForm;
+$('#closeTaskDialog').onclick = closeTaskDialog;
+$('#addTaskBtn').onclick = () => openTaskDialog('add');
+$('#fabAdd').onclick = () => openTaskDialog('add');
 $('#allDay').addEventListener('change', e => setAllDay(e.target.checked));
 $('#project').addEventListener('change', syncShareFamilyForProject);
 $('#prev').onclick = () => { state.view.setMonth(state.view.getMonth() - 1); calendar(); };
