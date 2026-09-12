@@ -73,8 +73,9 @@ test('FIXED_PROJECTS / PROJECT_DEFAULTS', () => {
 
 test('projectColor: 고정 3색, 결정적, 미분류는 회색', () => {
   assert.equal(projectColor('회사 업무'), '#0a84ff');
-  assert.equal(projectColor('개인 일정'), '#248a5b');
-  assert.equal(projectColor('가족 일정'), '#f0730a');
+  assert.equal(projectColor('개인 일정'), '#f0730a');
+  assert.equal(projectColor('가족 일정'), '#2f7a3d');
+  assert.equal(projectColor('가족일정'), '#2f7a3d');
   assert.equal(projectColor(null), '#6b7280');
   assert.equal(projectColor(''), '#6b7280');
   const a = projectColor('투자 · 자산');

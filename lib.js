@@ -6,8 +6,9 @@ export const PROJECT_DEFAULTS = [...FIXED_PROJECTS];
 // 프로젝트 색은 저장하지 않고 이름에서 정한다. 고정 3개는 지정색, 나머지는 이름 해시로 팔레트에서.
 export const PROJECT_COLORS = {
   '회사 업무': '#0a84ff',
-  '개인 일정': '#248a5b',
-  '가족 일정': '#f0730a'
+  '개인 일정': '#f0730a',
+  '가족 일정': '#2f7a3d',
+  '가족일정': '#2f7a3d'
 };
 export const PALETTE = ['#7c5cff', '#d63384', '#0aa5a0', '#b8860b', '#6b7280'];
 export const UNSORTED_COLOR = '#6b7280';

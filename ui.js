@@ -52,17 +52,36 @@ function taskHTML(t) {
 export function render() {
   document.documentElement.classList.toggle('dark', settings.dark);
   const td = iso(today);
-  const open = state.tasks.filter(t => !t.done);
-  const done = state.tasks.filter(t => t.done);
-  const shown = visibleTasks();
-  $('#openCount').textContent = open.length;
-  $('#doneCount').textContent = done.length;
-  $('#todayTasks').innerHTML = shown.filter(t => spansDay(t, td)).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">오늘 등록된 업무가 없습니다.</div>';
   const until = iso(addDays(today, 7));
-  $('#weekTasks').innerHTML = shown.filter(t => !t.done && dueDate(t) >= td && dueDate(t) <= until).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">이번 주 마감 업무가 없습니다.</div>';
-
-  const dueSoon = open.filter(t => dueDate(t) <= iso(addDays(today, 3))).sort(sortTasks);
+  const shown = visibleTasks();
+  // "오늘 해야 할 일", "이번 주 마감", 상단 카운트, 마감 임박 배너는 개인 업무만.
+  // 가족 공유 업무는 아래 "가족 일정" 카드에서 별도로 본다.
+  const personal = state.tasks.filter(t => !t.familyId);
+  const personalOpen = personal.filter(t => !t.done);
+  const personalDone = personal.filter(t => t.done);
+  $('#openCount').textContent = personalOpen.length;
+  $('#doneCount').textContent = personalDone.length;
+  const personalShown = shown.filter(t => !t.familyId);
+  $('#todayTasks').innerHTML = personalShown.filter(t => spansDay(t, td)).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">오늘 등록된 업무가 없습니다.</div>';
+  $('#weekTasks').innerHTML = personalShown.filter(t => !t.done && dueDate(t) >= td && dueDate(t) <= until).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">이번 주 마감 업무가 없습니다.</div>';
+  const dueSoon = personalOpen.filter(t => dueDate(t) <= iso(addDays(today, 3))).sort(sortTasks);
   $('#dueAlerts').innerHTML = dueSoon.length ? `<div class="alert">마감 임박 ${dueSoon.length}건: ${esc(dueSoon.slice(0, 3).map(t => t.title).join(', '))}</div>` : '';
+
+  // 가족 일정 카드: family_id 가 있는 업무만 (spansDay 오늘 또는 이번 주 안 마감).
+  const famCard = $('#familyTasksCard');
+  if (famCard) {
+    if (!state.family) { famCard.hidden = true; }
+    else {
+      famCard.hidden = false;
+      // "가족 일정 리스트" = 프로젝트가 정확히 "가족 일정"(또는 "가족일정")인 업무만.
+      // 다른 프로젝트에 붙인 "가족과 공유" 태그는 inform 목적이라 캘린더에만 표시 (여기 안 옴).
+      const famShown = shown.filter(t => isFamilyProject(t.project));
+      const famList = famShown.filter(t => spansDay(t, td) || (!t.done && dueDate(t) >= td && dueDate(t) <= until)).sort(sortTasks);
+      $('#familyTasks').innerHTML = famList.map(taskHTML).join('') || '<div class="empty">"가족 일정" 프로젝트로 새 업무를 만들면 여기 나타납니다.</div>';
+      const famOpen = state.tasks.filter(t => isFamilyProject(t.project) && !t.done).length;
+      $('#familyTasksCount').textContent = famOpen ? `미완료 ${famOpen}` : '';
+    }
+  }
 
   renderProjects();
   calendar();
