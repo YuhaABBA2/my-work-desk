@@ -105,7 +105,7 @@ export function projectColor(name) {
 |---|---|
 | 오늘 해야 할 일 | `t.date ≤ 오늘 ≤ dueDate(t)` |
 | 이번 주 마감 | 미완료 + `오늘 ≤ dueDate(t) ≤ 오늘+7` |
-| 마감 임박 배지 | `diff = dueDate − 오늘`. diff<0 "지남", `t.date < 오늘 ≤ dueDate` 이고 diff>0 "진행중", diff=0 "오늘", diff≤3 "N일" |
+| 마감 임박 배지 | `diff = dueDate − 오늘`. diff<0 "지남", diff=0 "오늘", `t.date ≤ 오늘` 이고 diff>0 "진행중", diff≤3 "N일" |
 | 마감 임박 알림 카드/버튼 | 미완료 + `dueDate ≤ 오늘+3` |
 | 월간 캘린더 | `t.date ≤ 날짜 ≤ dueDate(t)`인 모든 칸에 표시. 점 색 = `projectColor(t.project)` |
 

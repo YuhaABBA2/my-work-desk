@@ -1,6 +1,31 @@
 // DOM·Supabase에 의존하지 않는 순수 함수. node --test 로 검증한다.
 
-export const PROJECT_DEFAULTS = ['회사 업무', '개인 일정', '투자 · 자산', 'Work Station'];
+export const FIXED_PROJECTS = ['회사 업무', '개인 일정', '가족 일정'];
+export const PROJECT_DEFAULTS = [...FIXED_PROJECTS];
+
+// 프로젝트 색은 저장하지 않고 이름에서 정한다. 고정 3개는 지정색, 나머지는 이름 해시로 팔레트에서.
+export const PROJECT_COLORS = {
+  '회사 업무': '#0a84ff',
+  '개인 일정': '#248a5b',
+  '가족 일정': '#f0730a'
+};
+export const PALETTE = ['#7c5cff', '#d63384', '#0aa5a0', '#b8860b', '#6b7280'];
+export const UNSORTED_COLOR = '#6b7280';
+
+export function projectColor(name) {
+  if (!name) return UNSORTED_COLOR;
+  if (PROJECT_COLORS[name]) return PROJECT_COLORS[name];
+  let h = 0;
+  for (const ch of String(name)) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+  return PALETTE[h % PALETTE.length];
+}
+
+// 고정 프로젝트가 정해진 순서로 앞, 나머지는 들어온 순서.
+export function sortProjects(names) {
+  const fixed = FIXED_PROJECTS.filter(n => names.includes(n));
+  const rest = names.filter(n => !FIXED_PROJECTS.includes(n));
+  return [...fixed, ...rest];
+}
 
 export function iso(d) {
   const x = new Date(d);
@@ -35,13 +60,40 @@ export function occurrenceDates(startIso, repeat, count) {
   });
 }
 
-// "이후 모두" 수정: 날짜는 편집 중인 일정에만, 나머지 필드는 시리즈 전체에 적용한다.
+// "이후 모두" 수정: 시작일·종료일은 편집 중인 회차에만, 나머지 필드는 시리즈 전체에 적용한다.
 export function splitSeriesEdit(base) {
-  const { task_date, ...seriesFields } = base;
-  return { seriesFields, task_date };
+  const { task_date, end_date, ...seriesFields } = base;
+  return { seriesFields, task_date, end_date };
 }
 
 // 1회 이관용: 이 기기의 localStorage 목록 + 업무에 실제 쓰인 이름. 순서 유지, 공백 정리, 중복 제거.
 export function mergeProjectNames(local, fromTasks) {
   return [...new Set([...local, ...fromTasks].map(s => String(s || '').trim()).filter(n => n && n.length <= 50))];
+}
+
+// ---- 기간 일정 ----
+// 마감일: 종료일이 있으면 종료일, 없으면 시작일.
+export function dueDate(t) { return t.endDate || t.date; }
+export function spansDay(t, dayIso) { return t.date <= dayIso && dayIso <= dueDate(t); }
+export function daysBetween(aIso, bIso) { return Math.round((parseIso(bIso) - parseIso(aIso)) / 86400000); }
+
+// 배지 판정. 'past' 지남 · 'today' 오늘 마감 · 'ongoing' 시작했고 마감 전 · 'soon:N' N일 뒤 마감(≤3) · '' 그 외
+export function dueState(t, todayIso) {
+  const diff = daysBetween(todayIso, dueDate(t));
+  if (diff < 0) return 'past';
+  if (diff === 0) return 'today';
+  if (t.date <= todayIso) return 'ongoing';
+  if (diff <= 3) return `soon:${diff}`;
+  return '';
+}
+
+// 반복 회차마다 같은 길이의 기간을 유지한다.
+export function shiftEndDate(startIso, endIso, newStartIso) {
+  if (!endIso) return null;
+  return iso(addDays(parseIso(newStartIso), daysBetween(startIso, endIso)));
+}
+
+export function fmtMd(isoStr) {
+  const [, m, d] = isoStr.split('-').map(Number);
+  return `${m}/${d}`;
 }
