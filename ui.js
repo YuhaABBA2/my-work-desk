@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween } from './lib.js';
 import { today, state, settings } from './state.js';
 
 export const $ = (s) => document.querySelector(s);
@@ -165,24 +165,72 @@ export function calendar() {
   const days = new Date(y, m + 1, 0).getDate();
   const prev = new Date(y, m, 0).getDate();
   $('#monthLabel').textContent = `${y}년 ${m + 1}월`;
-  let html = '';
   const shown = visibleTasks();
+  const todayIso = iso(today);
+
+  // 42셀 만들어 주별로 자른다.
+  const cells = [];
   for (let i = 0; i < 42; i++) {
     let n, dt, other = false;
     if (i < first) { n = prev - first + i + 1; dt = new Date(y, m - 1, n); other = true; }
     else if (i >= first + days) { n = i - first - days + 1; dt = new Date(y, m + 1, n); other = true; }
     else { n = i - first + 1; dt = new Date(y, m, n); }
-    const dayIso = iso(dt);
-    const all = shown.filter(t => spansDay(t, dayIso));
-    const LIMIT = 4;
-    const list = all.slice(0, LIMIT);
-    const dots = list.map(t => {
-      const c = projectColor(t.project);
-      return `<span class="dot" style="background:${c}22;color:${c}" title="${esc(t.title)}">${esc(t.title)}</span>`;
-    }).join('') + (all.length > LIMIT ? `<span class="dot more">+${all.length - LIMIT}</span>` : '');
-    html += `<button class="day ${other ? 'other' : ''} ${dayIso === iso(today) ? 'today' : ''} ${dayIso === state.selectedDate ? 'selected' : ''}" data-date="${dayIso}"><b>${n}</b>${dots}</button>`;
+    cells.push({ n, iso: iso(dt), other });
   }
-  $('#calendar').innerHTML = html;
+  const weeks = [];
+  for (let i = 0; i < 6; i++) weeks.push(cells.slice(i * 7, i * 7 + 7));
+
+  // 긴 기간이 위 트랙에 배치되도록 정렬.
+  const sorted = [...shown].sort((a, b) => {
+    const spanA = daysBetween(a.date, dueDate(a));
+    const spanB = daysBetween(b.date, dueDate(b));
+    if (spanB !== spanA) return spanB - spanA;
+    return sortTasks(a, b);
+  });
+
+  const MAX_TRACKS = 3;  // 한 셀에 세그먼트 최대 3개 표시, 이후는 "+N"
+
+  const weekHtml = weeks.map(week => {
+    const wkStart = week[0].iso, wkEnd = week[6].iso;
+    const segs = [];
+    for (const t of sorted) {
+      if (dueDate(t) < wkStart) continue;
+      if (t.date > wkEnd) continue;
+      const startCol = Math.max(0, daysBetween(wkStart, t.date));
+      const endCol = Math.min(6, daysBetween(wkStart, dueDate(t)));
+      segs.push({ task: t, startCol, endCol });
+    }
+    // 트랙 배정 (겹치지 않는 가장 낮은 번호)
+    const tracks = [];
+    for (const seg of segs) {
+      let tr = 0;
+      while (tr < tracks.length && tracks[tr].some(o => !(seg.endCol < o.startCol || seg.startCol > o.endCol))) tr++;
+      if (!tracks[tr]) tracks[tr] = [];
+      tracks[tr].push(seg);
+      seg.track = tr;
+    }
+    // 초과 트랙은 셀 하단 "+N" 표시
+    const overflow = new Array(7).fill(0);
+    for (const seg of segs) {
+      if (seg.track >= MAX_TRACKS) {
+        for (let c = seg.startCol; c <= seg.endCol; c++) overflow[c]++;
+      }
+    }
+
+    const cellsHtml = week.map((c, ci) => `<button class="wk-cell${c.other ? ' other' : ''}${c.iso === todayIso ? ' today' : ''}${c.iso === state.selectedDate ? ' selected' : ''}" data-date="${c.iso}"><span class="wk-num">${c.n}</span>${overflow[ci] > 0 ? `<span class="wk-more">+${overflow[ci]}</span>` : ''}</button>`).join('');
+
+    const segsHtml = segs.filter(s => s.track < MAX_TRACKS).map(s => {
+      const col = projectColor(s.task.project);
+      const leftPct = (s.startCol / 7) * 100;
+      const widthPct = ((s.endCol - s.startCol + 1) / 7) * 100;
+      const top = 22 + s.track * 22;
+      return `<span class="wk-seg" style="left:${leftPct.toFixed(3)}%;width:calc(${widthPct.toFixed(3)}% - 4px);top:${top}px;background:${col}22;color:${col};border-left:3px solid ${col}" title="${esc(s.task.title)}">${esc(s.task.title)}</span>`;
+    }).join('');
+
+    return `<div class="wk-row"><div class="wk-cells">${cellsHtml}</div><div class="wk-segs">${segsHtml}</div></div>`;
+  }).join('');
+
+  $('#calendar').innerHTML = weekHtml;
 }
 
 export function resetForm() {
