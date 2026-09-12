@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="우리집 데스크">
-  <rect width="512" height="512" fill="#eaf5ea"/>
+  <rect width="512" height="512" fill="#eef2e6"/>
   <ellipse cx="256" cy="460" rx="230" ry="41" fill="#cee8d2"/>
   <!-- Trunk -->
   <rect x="228.16" y="317.44" width="55.68" height="122.88" rx="20" ry="20" fill="#8b6b3f"/>
