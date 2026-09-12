@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { state, today } from './state.js';
-import { iso, addDays, sortTasks, occurrenceDates, splitSeriesEdit } from './lib.js';
+import { iso, addDays, sortTasks, occurrenceDates, splitSeriesEdit, shiftEndDate } from './lib.js';
 import { $, render, resetForm, fillEditForm, askSeriesScope } from './ui.js';
 
 export async function load() {
@@ -15,18 +15,25 @@ export async function load() {
     time: x.task_time?.slice(0, 5) || '',
     note: x.note,
     done: x.done,
-    seriesId: x.series_id || null
+    seriesId: x.series_id || null,
+    endDate: x.end_date || null,
+    remind1h: !!x.remind_1h,
+    remind1d: !!x.remind_1d
   }));
   render();
 }
 
 function readForm() {
+  const allDay = $('#allDay').checked;
   return {
     title: $('#title').value.trim(),
     task_date: $('#date').value,
+    end_date: $('#endDate').value || null,
     priority: $('#priority').value,
-    project: $('#project').value.trim() || null,
-    task_time: $('#time').value || null,
+    project: $('#project').value || null,
+    task_time: allDay ? null : ($('#time').value || null),
+    remind_1h: allDay ? false : $('#remind1h').checked,
+    remind_1d: $('#remind1d').checked,
     note: $('#note').value.trim() || null,
     updated_at: new Date().toISOString()
   };
@@ -35,6 +42,7 @@ function readForm() {
 export async function saveTask(e) {
   e.preventDefault();
   const base = readForm();
+  if (base.end_date && base.end_date < base.task_date) return alert('종료일은 시작일보다 앞설 수 없습니다.');
 
   if (state.editId) {
     const current = state.tasks.find(t => t.id === state.editId);
@@ -44,12 +52,12 @@ export async function saveTask(e) {
       if (!scope) return;
     }
     if (scope === 'following') {
-      const { seriesFields, task_date } = splitSeriesEdit(base);
+      const { seriesFields, task_date, end_date } = splitSeriesEdit(base);
       const r1 = await sb.from('work_tasks').update(seriesFields)
         .eq('series_id', current.seriesId).gte('task_date', current.date);
       if (r1.error) return alert('수정하지 못했습니다.');
-      if (task_date !== current.date) {
-        const r2 = await sb.from('work_tasks').update({ task_date }).eq('id', state.editId);
+      if (task_date !== current.date || end_date !== current.endDate) {
+        const r2 = await sb.from('work_tasks').update({ task_date, end_date }).eq('id', state.editId);
         if (r2.error) { await load(); return alert('날짜를 수정하지 못했습니다.'); }
       }
     } else {
@@ -69,9 +77,12 @@ export async function saveTask(e) {
     user_id: state.user.id,
     title: base.title,
     task_date: date,
+    end_date: shiftEndDate(base.task_date, base.end_date, date),
     priority: base.priority,
     project: base.project,
     task_time: base.task_time,
+    remind_1h: base.remind_1h,
+    remind_1d: base.remind_1d,
     note: base.note,
     series_id: seriesId
   }));

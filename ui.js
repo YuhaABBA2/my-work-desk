@@ -73,6 +73,9 @@ export function renderProjects() {
     const color = projectColor(p === '미분류' ? null : p);
     return `<div class="project"><div class="project-line"><span>${dot(p === '미분류' ? null : p)}${esc(p)}</span><span class="hint">${items.length}건 남음</span></div><div class="bar"><i style="width:${pct}%;background:${color}"></i></div></div>`;
   }).join('') || '<div class="empty">프로젝트별 업무를 등록해 보세요.</div>';
+
+  const cur = $('#project').value;
+  renderProjectOptions(state.editId ? (cur || null) : (cur || undefined));
 }
 
 export function calendar() {
@@ -105,7 +108,31 @@ export function resetForm() {
   $('#repeatCount').disabled = false;
   $('#addForm').reset();
   $('#date').value = state.selectedDate || iso(today);
+  $('#endDate').value = '';
   $('#repeatCount').value = 1;
+  setAllDay(false);
+  renderProjectOptions(undefined);
+}
+
+// 프로젝트 select 옵션. selected 가 목록에 없으면 임시 옵션으로 넣는다(옛 이름, null → 미분류).
+export function renderProjectOptions(selected) {
+  const sel = $('#project');
+  const names = [...state.projects];
+  const value = selected === undefined ? (names.includes('개인 일정') ? '개인 일정' : (names[0] || '')) : (selected || '');
+  if (selected && !names.includes(selected)) names.push(selected);
+  const opts = names.map(p => `<option value="${esc(p)}">${esc(p)}</option>`);
+  if (selected === null) opts.unshift('<option value="">미분류</option>');
+  sel.innerHTML = opts.join('');
+  sel.value = value;
+}
+
+// 하루종일: 시간칸을 비우고 잠근다. "1시간 전" 알림도 의미가 없으니 끈다.
+export function setAllDay(on) {
+  $('#allDay').checked = on;
+  $('#time').disabled = on;
+  if (on) $('#time').value = '';
+  $('#remind1h').disabled = on;
+  if (on) $('#remind1h').checked = false;
 }
 
 export function fillEditForm(t) {
@@ -115,9 +142,13 @@ export function fillEditForm(t) {
   $('#cancelEdit').hidden = false;
   $('#title').value = t.title;
   $('#date').value = t.date;
+  $('#endDate').value = t.endDate || '';
   $('#priority').value = t.priority;
-  $('#project').value = t.project || '';
+  renderProjectOptions(t.project || null);
+  setAllDay(!t.time);
   $('#time').value = t.time || '';
+  $('#remind1h').checked = !!t.remind1h && !!t.time;
+  $('#remind1d').checked = !!t.remind1d;
   $('#note').value = t.note || '';
   $('#repeat').value = 'none';
   $('#repeat').disabled = true;

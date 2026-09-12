@@ -1,7 +1,7 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
 import { iso } from './lib.js';
-import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus } from './ui.js';
+import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask, notifyDue } from './tasks.js';
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
@@ -70,6 +70,7 @@ $('#calendar').addEventListener('click', e => {
 });
 $('#projectChips').addEventListener('click', handleTaskAction);
 $('#cancelEdit').onclick = resetForm;
+$('#allDay').addEventListener('change', e => setAllDay(e.target.checked));
 $('#prev').onclick = () => { state.view.setMonth(state.view.getMonth() - 1); calendar(); };
 $('#next').onclick = () => { state.view.setMonth(state.view.getMonth() + 1); calendar(); };
 $('#thisMonth').onclick = () => { state.view = new Date(today.getFullYear(), today.getMonth(), 1); state.selectedDate = iso(today); $('#date').value = state.selectedDate; calendar(); };

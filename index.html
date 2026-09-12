@@ -49,13 +49,30 @@
         <div class="card-head"><h2 id="formTitle">업무 · 일정 추가</h2><button id="cancelEdit" class="text-button" hidden>취소</button></div>
         <form id="addForm" class="form">
           <input id="title" required maxlength="200" placeholder="할 일 또는 일정 제목">
-          <div class="form-row"><input id="date" type="date" required><input id="time" type="time" step="300"></div>
-          <div class="form-row"><select id="priority"><option value="high">중요</option><option value="middle" selected>보통</option><option value="low">여유</option></select><input id="project" list="projects" maxlength="50" placeholder="프로젝트 / 카테고리"></div>
-          <div class="form-row"><select id="repeat"><option value="none" selected>반복 없음</option><option value="daily">매일 반복</option><option value="weekly">매주 반복</option><option value="monthly">매월 반복</option></select><input id="repeatCount" type="number" min="1" max="24" value="1" title="반복 횟수"></div>
+          <div class="form-row">
+            <label class="field"><span>시작일</span><input id="date" type="date" required></label>
+            <label class="field"><span>종료일 (선택)</span><input id="endDate" type="date"></label>
+          </div>
+          <div class="form-row">
+            <input id="time" type="time" step="300">
+            <label class="check-field"><input id="allDay" type="checkbox"> 하루종일</label>
+          </div>
+          <div class="form-row">
+            <select id="priority"><option value="high">중요</option><option value="middle" selected>보통</option><option value="low">여유</option></select>
+            <select id="project" aria-label="프로젝트"></select>
+          </div>
+          <div class="form-row">
+            <select id="repeat"><option value="none" selected>반복 없음</option><option value="daily">매일 반복</option><option value="weekly">매주 반복</option><option value="monthly">매월 반복</option></select>
+            <input id="repeatCount" type="number" min="1" max="24" value="1" title="반복 횟수">
+          </div>
+          <div class="check-row">
+            <span class="hint">알림</span>
+            <label class="check-field"><input id="remind1h" type="checkbox"> 1시간 전</label>
+            <label class="check-field"><input id="remind1d" type="checkbox"> 하루 전</label>
+          </div>
           <textarea id="note" maxlength="1000" placeholder="메모 (선택)"></textarea>
           <button id="submitTask" class="primary">추가하기</button>
         </form>
-        <datalist id="projects"></datalist>
       </article>
       <article class="card">
         <div class="card-head"><h2>프로젝트 관리</h2><span class="hint">자주 쓰는 카테고리</span></div>
