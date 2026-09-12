@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd } from './lib.js';
 import { today, state, settings } from './state.js';
 
 export const $ = (s) => document.querySelector(s);
@@ -7,22 +7,38 @@ function visibleTasks() { return settings.hideDone ? state.tasks.filter(t => !t.
 
 function dueInfo(t) {
   if (t.done) return '';
-  const diff = Math.round((new Date(t.date) - today) / 86400000);
-  if (diff < 0) return '<span class="due-badge overdue">지남</span>';
-  if (diff === 0) return '<span class="due-badge today-due">오늘</span>';
-  if (diff <= 3) return `<span class="due-badge soon">${diff}일</span>`;
+  const s = dueState(t, iso(today));
+  if (s === 'past') return '<span class="due-badge overdue">지남</span>';
+  if (s === 'today') return '<span class="due-badge today-due">오늘</span>';
+  if (s === 'ongoing') return '<span class="due-badge ongoing">진행중</span>';
+  if (s.startsWith('soon:')) return `<span class="due-badge soon">${s.slice(5)}일</span>`;
   return '';
+}
+
+function taskMeta(t) {
+  const parts = [];
+  if (t.endDate && t.endDate !== t.date) parts.push(`${fmtMd(t.date)} ~ ${fmtMd(t.endDate)}`);
+  parts.push(t.time ? esc(t.time) : '하루종일');
+  parts.push(esc(t.project || '미분류'));
+  if (t.note) parts.push(esc(t.note));
+  return parts.join(' · ');
+}
+
+function remindBadge(t) {
+  const on = [t.remind1h && '1시간 전', t.remind1d && '하루 전'].filter(Boolean);
+  return on.length ? `<span class="badge remind" title="${on.join(' · ')}">알림</span>` : '';
 }
 
 function taskHTML(t) {
   return `<div class="task ${t.done ? 'done' : ''}">
-    <input class="check" type="checkbox" ${t.done ? 'checked' : ''} data-action="toggle-task" data-id="${esc(t.id)}">
+    <input class="check" type="checkbox" ${t.done ? 'checked' : ''} data-action="toggle-task" data-id="${esc(t.id)}" style="accent-color:${projectColor(t.project)}">
     <div class="task-main">
       <div class="task-title">${esc(t.title)}</div>
-      <div class="task-meta">${t.time ? esc(t.time) + ' · ' : ''}${esc(t.project || '미분류')}${t.note ? ' · ' + esc(t.note) : ''}</div>
+      <div class="task-meta">${taskMeta(t)}</div>
     </div>
     ${dueInfo(t)}
     ${t.seriesId ? '<span class="badge repeat">반복</span>' : ''}
+    ${remindBadge(t)}
     <span class="badge ${t.priority}">${pri(t.priority)}</span>
     <button class="edit" data-action="edit-task" data-id="${esc(t.id)}">수정</button>
     <button class="delete" aria-label="삭제" data-action="remove-task" data-id="${esc(t.id)}">×</button>
@@ -40,11 +56,11 @@ export function render() {
   const shown = visibleTasks();
   $('#openCount').textContent = open.length;
   $('#doneCount').textContent = done.length;
-  $('#todayTasks').innerHTML = shown.filter(t => t.date === td).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">오늘 등록된 업무가 없습니다.</div>';
+  $('#todayTasks').innerHTML = shown.filter(t => spansDay(t, td)).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">오늘 등록된 업무가 없습니다.</div>';
   const until = iso(addDays(today, 7));
-  $('#weekTasks').innerHTML = shown.filter(t => !t.done && t.date >= td && t.date <= until).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">이번 주 마감 업무가 없습니다.</div>';
+  $('#weekTasks').innerHTML = shown.filter(t => !t.done && dueDate(t) >= td && dueDate(t) <= until).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">이번 주 마감 업무가 없습니다.</div>';
 
-  const dueSoon = open.filter(t => t.date <= iso(addDays(today, 3))).sort(sortTasks);
+  const dueSoon = open.filter(t => dueDate(t) <= iso(addDays(today, 3))).sort(sortTasks);
   $('#dueAlerts').innerHTML = dueSoon.length ? `<div class="alert">마감 임박 ${dueSoon.length}건: ${esc(dueSoon.slice(0, 3).map(t => t.title).join(', '))}</div>` : '';
 
   renderProjects();
@@ -93,8 +109,12 @@ export function calendar() {
     else if (i >= first + days) { n = i - first - days + 1; dt = new Date(y, m + 1, n); other = true; }
     else { n = i - first + 1; dt = new Date(y, m, n); }
     const dayIso = iso(dt);
-    const list = shown.filter(t => t.date === dayIso).slice(0, 2);
-    html += `<button class="day ${other ? 'other' : ''} ${dayIso === iso(today) ? 'today' : ''} ${dayIso === state.selectedDate ? 'selected' : ''}" data-date="${dayIso}"><b>${n}</b>${list.map(t => `<span class="dot">${esc(t.title)}</span>`).join('')}</button>`;
+    const list = shown.filter(t => spansDay(t, dayIso)).slice(0, 2);
+    const dots = list.map(t => {
+      const c = projectColor(t.project);
+      return `<span class="dot" style="background:${c}22;color:${c}">${esc(t.title)}</span>`;
+    }).join('');
+    html += `<button class="day ${other ? 'other' : ''} ${dayIso === iso(today) ? 'today' : ''} ${dayIso === state.selectedDate ? 'selected' : ''}" data-date="${dayIso}"><b>${n}</b>${dots}</button>`;
   }
   $('#calendar').innerHTML = html;
 }

@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { state, today } from './state.js';
-import { iso, addDays, sortTasks, occurrenceDates, splitSeriesEdit, shiftEndDate } from './lib.js';
+import { iso, addDays, sortTasks, occurrenceDates, splitSeriesEdit, shiftEndDate, dueDate } from './lib.js';
 import { $, render, resetForm, fillEditForm, askSeriesScope } from './ui.js';
 
 export async function load() {
@@ -125,7 +125,7 @@ export async function removeTask(id) {
 }
 
 export async function notifyDue() {
-  const due = state.tasks.filter(t => !t.done && t.date <= iso(addDays(today, 3))).sort(sortTasks);
+  const due = state.tasks.filter(t => !t.done && dueDate(t) <= iso(addDays(today, 3))).sort(sortTasks);
   if (!due.length) return alert('마감 임박 업무가 없습니다.');
   if (!('Notification' in window)) return alert('이 브라우저는 알림을 지원하지 않습니다.');
   const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
