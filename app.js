@@ -56,13 +56,6 @@ async function handleFamilyAction(e) {
   syncShareFamilyForProject();
 }
 
-async function onToggleMarket() {
-  const err = await setShowMarket(!state.settings.showMarket);
-  if (err) return alert(err.message || '설정을 저장하지 못했습니다.');
-  applyMarketVisibility();
-  if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); }
-}
-
 let started = false;
 
 async function start() {
@@ -178,7 +171,6 @@ $('#familyBody').addEventListener('click', handleFamilyAction);
 $('#familyBody').addEventListener('keydown', e => {
   if (e.target.id === 'joinCode' && e.key === 'Enter') { e.preventDefault(); $('#joinFamily')?.click(); }
 });
-$('#toggleMarket').onclick = onToggleMarket;
 $('#refreshMarket').onclick = loadMarket;
 $('#openMarketDashboard').onclick = () => window.open('https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd?vsView=Y', '_blank', 'noopener');
 $('#searchStock').onclick = renderStockLinks;
