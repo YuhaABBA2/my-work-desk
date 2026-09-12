@@ -47,6 +47,7 @@ test('mergeProjectNames: 로컬 우선, 업무에서 온 이름 추가, 중복·
   );
   assert.deepEqual(mergeProjectNames([], []), []);
   assert.deepEqual(mergeProjectNames([' 공백 '], []), ['공백']);
+  assert.deepEqual(mergeProjectNames(['a'.repeat(51), 'b'.repeat(50)], []), ['b'.repeat(50)]);
 });
 
 test('splitSeriesEdit: task_date 만 분리하고 나머지는 그대로', () => {

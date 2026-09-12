@@ -46,9 +46,11 @@ export async function migrateLocalProjects() {
 export async function addProject(name) {
   name = name.trim();
   if (!name) return null;
+  if (name.length > 50) return new Error('프로젝트 이름은 50자 이내여야 합니다.');
   const { error } = await sb.from('work_projects')
     .insert({ user_id: state.user.id, name, sort_order: state.projects.length });
-  if (error) return error.code === '23505' ? new Error('이미 있는 프로젝트입니다.') : error;
+  if (error) return error.code === '23505' ? new Error('이미 있는 프로젝트입니다.')
+    : error.code === '23514' ? new Error('프로젝트 이름은 50자 이내여야 합니다.') : error;
   return loadProjects();
 }
 

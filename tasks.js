@@ -50,7 +50,7 @@ export async function saveTask(e) {
       if (r1.error) return alert('수정하지 못했습니다.');
       if (task_date !== current.date) {
         const r2 = await sb.from('work_tasks').update({ task_date }).eq('id', state.editId);
-        if (r2.error) return alert('날짜를 수정하지 못했습니다.');
+        if (r2.error) { await load(); return alert('날짜를 수정하지 못했습니다.'); }
       }
     } else {
       const { error } = await sb.from('work_tasks').update(base).eq('id', state.editId);

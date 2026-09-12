@@ -28,12 +28,16 @@ async function onAddProject() {
   renderProjects();
 }
 
+let started = false;
+
 async function start() {
   document.documentElement.classList.toggle('dark', settings.dark);
   $('#todayLabel').textContent = today.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
   $('#date').value = iso(today);
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return;
+  if (started) return;
+  started = true;
   state.user = session.user;
   $('#userName').textContent = state.user.email || '로그인됨';
   $('#loginOverlay').hidden = true;

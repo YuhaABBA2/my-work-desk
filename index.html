@@ -50,7 +50,7 @@
         <form id="addForm" class="form">
           <input id="title" required maxlength="200" placeholder="할 일 또는 일정 제목">
           <div class="form-row"><input id="date" type="date" required><input id="time" type="time" step="300"></div>
-          <div class="form-row"><select id="priority"><option value="high">중요</option><option value="middle" selected>보통</option><option value="low">여유</option></select><input id="project" list="projects" maxlength="100" placeholder="프로젝트 / 카테고리"></div>
+          <div class="form-row"><select id="priority"><option value="high">중요</option><option value="middle" selected>보통</option><option value="low">여유</option></select><input id="project" list="projects" maxlength="50" placeholder="프로젝트 / 카테고리"></div>
           <div class="form-row"><select id="repeat"><option value="none" selected>반복 없음</option><option value="daily">매일 반복</option><option value="weekly">매주 반복</option><option value="monthly">매월 반복</option></select><input id="repeatCount" type="number" min="1" max="24" value="1" title="반복 횟수"></div>
           <textarea id="note" maxlength="1000" placeholder="메모 (선택)"></textarea>
           <button id="submitTask" class="primary">추가하기</button>
@@ -60,7 +60,7 @@
       <article class="card">
         <div class="card-head"><h2>프로젝트 관리</h2><span class="hint">자주 쓰는 카테고리</span></div>
         <div id="projectStatus" class="status"></div>
-        <div class="project-add"><input id="newProject" maxlength="100" placeholder="새 카테고리"><button id="addProject" class="tool">추가</button></div>
+        <div class="project-add"><input id="newProject" maxlength="50" placeholder="새 카테고리"><button id="addProject" class="tool">추가</button></div>
         <div id="projectChips" class="chips"></div>
         <div id="projectsView" class="project-list"></div>
       </article>
