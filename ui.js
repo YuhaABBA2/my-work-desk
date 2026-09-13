@@ -65,7 +65,27 @@ export function render() {
   $('#todayTasks').innerHTML = personalShown.filter(t => spansDay(t, td)).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">오늘 등록된 업무가 없습니다.</div>';
   $('#weekTasks').innerHTML = personalShown.filter(t => !t.done && dueDate(t) >= td && dueDate(t) <= until).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">이번주 업무일정이 없습니다.</div>';
   const dueSoon = personalOpen.filter(t => dueDate(t) <= iso(addDays(today, 3))).sort(sortTasks);
-  $('#dueAlerts').innerHTML = dueSoon.length ? `<div class="alert">마감 임박 ${dueSoon.length}건: ${esc(dueSoon.slice(0, 3).map(t => t.title).join(', '))}</div>` : '';
+  const alerts = [];
+  if (dueSoon.length) alerts.push(`<div class="alert">마감 임박 ${dueSoon.length}건: ${esc(dueSoon.slice(0, 3).map(t => t.title).join(', '))}</div>`);
+  // 저녁 배너 (22시~06시): 오늘 미완료 개인 업무를 내일로 넘기기.
+  const nowHour = new Date().getHours();
+  if (nowHour >= 22 || nowHour < 7) {
+    const overdue = personalOpen.filter(t => dueDate(t) <= td);
+    if (overdue.length) alerts.push(`<div class="alert evening"><span>오늘 못 한 일 ${overdue.length}건이 있습니다.</span> <button id="pushToTomorrow" class="text-button">내일로 넘기기</button></div>`);
+  }
+  // 일요일 회고 (오늘이 일요일이면)
+  if (today.getDay() === 0) {
+    const start = iso(addDays(today, -7)), end = iso(addDays(today, -1));
+    const doneLast = state.tasks.filter(t => t.done && dueDate(t) >= start && dueDate(t) <= end);
+    if (doneLast.length) {
+      const groups = {};
+      for (const t of doneLast) { const p = t.project || '미분류'; groups[p] = (groups[p] || 0) + 1; }
+      const pills = Object.entries(groups).sort((a, b) => b[1] - a[1]).slice(0, 5)
+        .map(([p, n]) => `<span class="retro-pill" style="background:${projectColor(p === '미분류' ? null : p)}22;color:${projectColor(p === '미분류' ? null : p)}">${esc(p)} ${n}</span>`).join('');
+      alerts.push(`<div class="alert retro"><b>지난주 ${doneLast.length}건 완료</b> · ${pills}</div>`);
+    }
+  }
+  $('#dueAlerts').innerHTML = alerts.join('');
 
   // 가족 일정 카드: family_id 가 있는 업무만 (spansDay 오늘 또는 이번 주 안 마감).
   const famBlock = $('#familyTasksBlock');
@@ -440,6 +460,38 @@ export function closeDayDialog() {
 function parseIsoLocal(s) {
   const [y, m, d] = s.split('-').map(Number);
   return new Date(y, m - 1, d);
+}
+
+
+// 전체 업무 검색 다이얼로그
+export function openSearchDialog() {
+  $('#searchInput').value = '';
+  renderSearchResults('');
+  $('#searchDialog').showModal();
+  setTimeout(() => $('#searchInput').focus(), 0);
+}
+export function closeSearchDialog() {
+  const d = $('#searchDialog');
+  if (d.open) d.close();
+}
+export function renderSearchResults(qRaw) {
+  const q = String(qRaw || '').trim().toLowerCase();
+  const box = $('#searchResults');
+  if (!q) {
+    box.innerHTML = '<div class="empty">제목·프로젝트·메모 중 아무 단어로 찾을 수 있습니다.</div>';
+    return;
+  }
+  const matches = state.tasks.filter(t => {
+    return (t.title || '').toLowerCase().includes(q)
+      || (t.project || '').toLowerCase().includes(q)
+      || (t.note || '').toLowerCase().includes(q);
+  }).sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return b.date.localeCompare(a.date);
+  }).slice(0, 60);
+  box.innerHTML = matches.length
+    ? matches.map(t => renderDayTaskRow(t, true)).join('')
+    : '<div class="empty">일치하는 업무가 없습니다.</div>';
 }
 
 export function openTaskDialog(mode = 'add') {

@@ -30,6 +30,7 @@
       <div><div class="eyebrow">HOME DESK</div><h1>우리집 데스크</h1></div>
       <div class="topRight">
         <div id="todayLabel" class="date"></div>
+        <button id="searchBtn" class="icon-btn" aria-label="검색" title="검색"><span aria-hidden="true">🔍</span></button>
         <button id="profileBtn" class="profile-btn" aria-label="내 계정 및 설정">
           <span id="profileAvatar" class="avatar">?</span>
           <span id="profileName" class="profile-name"></span>
@@ -99,7 +100,7 @@
     <div class="task-dialog-body">
       <div class="card-head"><h2 id="formTitle">업무 · 일정 추가</h2><button id="closeTaskDialog" type="button" class="text-button">닫기</button></div>
       <form id="addForm" class="form">
-          <input id="title" required maxlength="200" placeholder="할 일 또는 일정 제목">
+          <div class="title-row"><input id="title" required maxlength="200" placeholder="할 일 또는 일정 제목"><button id="micBtn" type="button" class="icon-btn" aria-label="음성 입력" title="음성 입력"><span aria-hidden="true">🎤</span></button></div>
           <div class="form-row">
             <label class="field"><span>시작일</span><input id="date" type="date" required></label>
             <label class="field"><span>종료일 (선택)</span><input id="endDate" type="date"></label>
@@ -192,6 +193,19 @@
         </div>
       </div>
       <div id="projectDialogList" class="day-tasks"></div>
+    </div>
+  </dialog>
+  <dialog id="searchDialog" class="day-dialog">
+    <div class="day-dialog-body">
+      <div class="day-dialog-head">
+        <div class="day-dialog-title" style="flex:1">
+          <input id="searchInput" placeholder="제목·프로젝트·메모에서 검색" autocomplete="off">
+        </div>
+        <div class="day-dialog-actions">
+          <button id="searchClose" type="button" class="text-button" aria-label="닫기">×</button>
+        </div>
+      </div>
+      <div id="searchResults" class="day-tasks"></div>
     </div>
   </dialog>
   <dialog id="seriesDialog" class="series-dialog">

@@ -1,7 +1,7 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
 import { iso, isValidFamilyCode, rpcErrorMessage } from './lib.js';
-import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog } from './ui.js';
+import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
@@ -66,6 +66,41 @@ async function onSettingsLeaveFamily() {
   applyMarketVisibility();
   syncShareFamilyForProject();
   closeSettingsDialog();
+}
+
+
+// 오늘 미완료 개인 업무 전체를 내일로 이동.
+async function pushOverdueToTomorrow() {
+  const td = new Date(); td.setHours(0, 0, 0, 0);
+  const tdIso = td.toISOString().slice(0, 10);
+  const t2 = new Date(td); t2.setDate(td.getDate() + 1);
+  const tomorrowIso = t2.toISOString().slice(0, 10);
+  const targets = state.tasks.filter(t => !t.done && !t.familyId && (t.endDate || t.date) <= tdIso).map(t => t.id);
+  if (!targets.length) return;
+  if (!confirm(`오늘 못 한 일 ${targets.length}건을 내일(${tomorrowIso})로 옮길까요?`)) return;
+  const { error } = await sb.from('work_tasks').update({ task_date: tomorrowIso, updated_at: new Date().toISOString() }).in('id', targets);
+  if (error) return alert(error.message || '옮기지 못했습니다.');
+  await load();
+}
+
+// Web Speech API 음성 입력 → 제목 필드에 붙여넣기
+function startVoiceInput() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return alert('이 브라우저는 음성 입력을 지원하지 않습니다. Chrome/Safari 에서 사용해 주세요.');
+  const rec = new SR();
+  rec.lang = 'ko-KR';
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+  const btn = $('#micBtn');
+  btn.classList.add('listening');
+  rec.onresult = (e) => {
+    const text = e.results[0]?.[0]?.transcript || '';
+    const cur = $('#title').value;
+    $('#title').value = cur ? `${cur} ${text}` : text;
+  };
+  rec.onerror = (e) => { if (e.error !== 'no-speech') alert('음성 인식 오류: ' + e.error); };
+  rec.onend = () => btn.classList.remove('listening');
+  try { rec.start(); } catch (_) { btn.classList.remove('listening'); }
 }
 
 let started = false;
@@ -221,6 +256,23 @@ $('#projectsView').addEventListener('click', (e) => {
   const btn = e.target.closest('.project-btn');
   if (!btn) return;
   openProjectDialog(btn.dataset.project);
+});
+// 검색
+$('#searchBtn').onclick = openSearchDialog;
+$('#searchClose').onclick = closeSearchDialog;
+$('#searchInput').addEventListener('input', (e) => renderSearchResults(e.target.value));
+$('#searchInput').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSearchDialog(); });
+$('#searchResults').addEventListener('click', (e) => {
+  const btn = e.target.closest('.day-task');
+  if (!btn) return;
+  closeSearchDialog();
+  editTask(btn.dataset.taskId);
+});
+// 음성 입력
+$('#micBtn').onclick = startVoiceInput;
+// 저녁 배너의 "내일로 넘기기" (동적으로 생기므로 위임)
+$('#dueAlerts').addEventListener('click', (e) => {
+  if (e.target.id === 'pushToTomorrow') pushOverdueToTomorrow();
 });
 sb.auth.onAuthStateChange((_event, session) => { if (session && !state.user) start(); });
 start();
