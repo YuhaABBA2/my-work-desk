@@ -42,21 +42,65 @@ export function parseIso(s) {
 
 export function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
 export function addMonths(d, n) { const x = new Date(d); x.setMonth(x.getMonth() + n); return x; }
+export function addYears(d, n) { const x = new Date(d); x.setFullYear(x.getFullYear() + n); return x; }
+
+// 양력 iso → { M, D } 음력 (한자력, Chinese calendar in ICU).
+const _lunarFmt = (typeof Intl !== 'undefined' && Intl.DateTimeFormat)
+  ? new Intl.DateTimeFormat('ko-u-ca-chinese', { month: 'numeric', day: 'numeric' })
+  : null;
+export function lunarParts(iso) {
+  if (!_lunarFmt) return null;
+  const [y, m, d] = iso.split('-').map(Number);
+  const p = _lunarFmt.formatToParts(new Date(y, m - 1, d));
+  const M = p.find(x => x.type === 'month')?.value;
+  const D = p.find(x => x.type === 'day')?.value;
+  return (M && D) ? { M, D } : null;
+}
+
+// 주어진 양력 년도 안에서 (lunarM, lunarD) 에 해당하는 양력 날짜(iso). 없으면 null.
+// 브루트 포스로 365일을 훑는다 (save 시 몇 번만 호출).
+export function solarForLunarInYear(year, lunarM, lunarD) {
+  if (!_lunarFmt) return null;
+  for (let m = 0; m < 12; m++) {
+    const daysInMonth = new Date(year, m + 1, 0).getDate();
+    for (let d = 1; d <= daysInMonth; d++) {
+      const p = _lunarFmt.formatToParts(new Date(year, m, d));
+      const M = p.find(x => x.type === 'month')?.value;
+      const D = p.find(x => x.type === 'day')?.value;
+      if (M === String(lunarM) && D === String(lunarD)) return iso(new Date(year, m, d));
+    }
+  }
+  return null;
+}
 export function esc(s) { return String(s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
 export function pri(p) { return p === 'high' ? '중요' : p === 'middle' ? '보통' : '여유'; }
 export function sortTasks(a, b) { return (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')); }
 
 export function repeatLabel(repeat) {
-  return repeat === 'daily' ? '매일' : repeat === 'weekly' ? '매주' : repeat === 'monthly' ? '매월' : '';
+  return repeat === 'daily' ? '매일'
+    : repeat === 'weekly' ? '매주'
+    : repeat === 'monthly' ? '매월'
+    : repeat === 'yearly' ? '매년'
+    : repeat === 'yearly-lunar' ? '매년 (음력)'
+    : '';
 }
 
 export function occurrenceDates(startIso, repeat, count) {
   if (repeat === 'none') return [startIso];
   const start = parseIso(startIso);
-  return Array.from({ length: Math.max(1, count) }, (_, i) => {
+  const n = Math.max(1, count);
+  // 음력 매년: 시작일의 음력 (M,D) 을 뽑아 매년 그 음력에 해당하는 양력 날짜.
+  if (repeat === 'yearly-lunar') {
+    const lp = lunarParts(startIso);
+    if (!lp) return [startIso];
+    const startYear = start.getFullYear();
+    return Array.from({ length: n }, (_, i) => solarForLunarInYear(startYear + i, lp.M, lp.D) || startIso);
+  }
+  return Array.from({ length: n }, (_, i) => {
     if (repeat === 'daily') return iso(addDays(start, i));
     if (repeat === 'weekly') return iso(addDays(start, i * 7));
     if (repeat === 'monthly') return iso(addMonths(start, i));
+    if (repeat === 'yearly') return iso(addYears(start, i));
     return startIso;
   });
 }
