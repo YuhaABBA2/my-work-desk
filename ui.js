@@ -116,12 +116,10 @@ export function renderFamily() {
       <div class="project-add"><input id="joinCode" maxlength="6" placeholder="초대 코드 6자리" autocapitalize="characters" autocomplete="off"><button id="joinFamily" class="tool">참여</button></div>`;
     return;
   }
-  const me = f.members.find(m => m.userId === state.user.id);
   box.innerHTML = `<ul class="members">${f.members.map(m =>
     `<li>${memberAvatar(m)}<span class="m-name">${esc(m.name)}</span>${m.userId === f.ownerId ? ' <span class="badge repeat">가장</span>' : ''}${m.userId === state.user.id ? ' <span class="hint">(나)</span>' : ''}</li>`
   ).join('')}</ul>
-    <div class="project-add"><input id="myName" maxlength="30" value="${esc(me?.name || '')}" placeholder="내 표시 이름"><button id="renameMe" class="tool">저장</button></div>
-    ${f.isAdmin ? '' : '<button id="leaveFamily" class="text-button">가족 나가기</button>'}`;
+    <p class="hint">이름 변경·초대 코드·가족 나가기는 프로필 → 설정에서.</p>`;
 }
 
 // 시세·투자 패널은 계정 설정으로, 토글 버튼은 관리자(또는 가족 없음)에게만.
@@ -339,12 +337,17 @@ export function openSettingsDialog() {
   $('#setMarket').checked = !!state.settings.showMarket;
   const canSeeMarket = !state.family || state.family.isAdmin;
   $('#setMarketRow').hidden = !canSeeMarket;
-  // 가족 초대 섹션은 내가 가장일 때만.
-  const inviteSection = $('#familyInviteSection');
-  if (inviteSection) {
-    const showInvite = !!(state.family && state.family.isAdmin);
-    inviteSection.hidden = !showInvite;
-    if (showInvite) $('#settingsInviteCode').textContent = state.family.code;
+  // 가족 섹션: 가족이 있으면 노출. 이름 항상, 초대는 가장만, 나가기는 구성원만.
+  const famSection = $('#familySection');
+  if (famSection) {
+    famSection.hidden = !state.family;
+    if (state.family) {
+      const me = state.family.members.find(m => m.userId === state.user?.id);
+      $('#settingsMyName').value = me?.name || '';
+      $('#familyInviteBlock').hidden = !state.family.isAdmin;
+      if (state.family.isAdmin) $('#settingsInviteCode').textContent = state.family.code;
+      $('#settingsLeaveFamily').hidden = state.family.isAdmin;
+    }
   }
   $('#settingsDialog').showModal();
 }

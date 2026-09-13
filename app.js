@@ -32,6 +32,7 @@ async function onAddProject() {
 }
 
 async function handleFamilyAction(e) {
+  // 가족 카드에는 이제 "만들기 / 참여" 만 남아 있다.
   const id = e.target.id;
   if (!id) return;
   const name = defaultDisplayName(state.user);
@@ -42,18 +43,29 @@ async function handleFamilyAction(e) {
     if (!isValidFamilyCode(code)) return alert('코드는 6자리입니다.');
     err = await joinFamily(code, name);
   }
-  else if (id === 'renameMe') err = await renameMe($('#myName').value);
-  else if (id === 'regenCode') err = await regenerateCode();
-  else if (id === 'leaveFamily') {
-    if (!confirm('가족에서 나갈까요? 가족 일정이 더 이상 보이지 않습니다.')) return;
-    err = await leaveFamily();
-  }
   else return;
   if (err) return alert(rpcErrorMessage(err));
-  await load();          // 가족 업무가 들어오거나 빠진다
+  await load();
   renderFamily();
   applyMarketVisibility();
   syncShareFamilyForProject();
+}
+
+// 설정 다이얼로그 안의 가족 관련 액션.
+async function onSettingsRenameMe() {
+  const err = await renameMe($('#settingsMyName').value);
+  if (err) return alert(err.message || '이름을 저장하지 못했습니다.');
+  renderFamily();
+}
+async function onSettingsLeaveFamily() {
+  if (!confirm('가족에서 나갈까요? 가족 일정이 더 이상 보이지 않습니다.')) return;
+  const err = await leaveFamily();
+  if (err) return alert(rpcErrorMessage(err));
+  await load();
+  renderFamily();
+  applyMarketVisibility();
+  syncShareFamilyForProject();
+  closeSettingsDialog();
 }
 
 let started = false;
@@ -148,6 +160,8 @@ async function shareFamilyCode() {
   } catch (_) { /* 사용자 취소 */ }
 }
 $('#settingsShareCode').onclick = shareFamilyCode;
+$('#settingsRenameMe').onclick = onSettingsRenameMe;
+$('#settingsLeaveFamily').onclick = onSettingsLeaveFamily;
 $('#settingsRegenCode').onclick = async () => {
   if (!confirm('초대 코드를 새로 발급할까요? 기존 코드로는 참여할 수 없게 됩니다.')) return;
   const err = await regenerateCode();

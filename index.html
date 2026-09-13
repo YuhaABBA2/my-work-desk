@@ -150,10 +150,15 @@
         <div class="project-add"><input id="newProject" maxlength="50" placeholder="새 카테고리"><button id="addProject" class="tool">추가</button></div>
         <p class="hint">추가한 카테고리는 프로젝트 관리 카드의 칩 목록에 나타납니다. 고정 3개(회사 업무·개인 일정·가족 일정)는 삭제할 수 없습니다.</p>
       </div>
-      <div class="settings-section" id="familyInviteSection" hidden>
-        <h3>가족 초대</h3>
-        <div class="code-line">초대 코드 <b class="code" id="settingsInviteCode">-</b><button id="settingsRegenCode" type="button" class="text-button">재발급</button><button id="settingsShareCode" type="button" class="text-button">공유</button></div>
-        <p class="hint">공유 버튼으로 카톡·문자에 초대 링크와 코드를 한번에 보낼 수 있습니다.</p>
+      <div class="settings-section" id="familySection" hidden>
+        <h3>가족</h3>
+        <div class="project-add"><input id="settingsMyName" maxlength="30" placeholder="내 표시 이름"><button id="settingsRenameMe" class="tool">저장</button></div>
+        <p class="hint">가족 안에서 서로를 부르는 별명. 사모님 화면에 이 이름이 뜹니다.</p>
+        <div id="familyInviteBlock" hidden>
+          <div class="code-line">초대 코드 <b class="code" id="settingsInviteCode">-</b><button id="settingsRegenCode" type="button" class="text-button">재발급</button><button id="settingsShareCode" type="button" class="text-button">공유</button></div>
+          <p class="hint">공유 버튼으로 카톡·문자에 초대 링크와 코드를 한번에 보낼 수 있습니다.</p>
+        </div>
+        <button id="settingsLeaveFamily" type="button" class="text-button" hidden>가족 나가기</button>
       </div>
       <div class="settings-section">
         <button id="logoutBtn" class="text-button">로그아웃</button>
