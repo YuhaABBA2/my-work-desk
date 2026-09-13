@@ -1,7 +1,7 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
 import { iso, isValidFamilyCode, rpcErrorMessage } from './lib.js';
-import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog } from './ui.js';
+import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
@@ -195,6 +195,18 @@ $('#dayDialogList').addEventListener('click', (e) => {
   if (!btn) return;
   closeDayDialog();
   editTask(btn.dataset.taskId);
+});
+$('#projectDialogClose').onclick = closeProjectDialog;
+$('#projectDialogList').addEventListener('click', (e) => {
+  const btn = e.target.closest('.day-task');
+  if (!btn) return;
+  closeProjectDialog();
+  editTask(btn.dataset.taskId);
+});
+$('#projectsView').addEventListener('click', (e) => {
+  const btn = e.target.closest('.project-btn');
+  if (!btn) return;
+  openProjectDialog(btn.dataset.project);
 });
 sb.auth.onAuthStateChange((_event, session) => { if (session && !state.user) start(); });
 start();

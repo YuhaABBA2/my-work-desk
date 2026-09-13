@@ -32,6 +32,10 @@ export async function loadFamily() {
   // 이 사용자가 예전에 만든 "가족 일정"/"가족일정" 업무 중 family_id 가 아직 없는 것을 소급해서 태그한다. 멱등.
   await sb.from('work_tasks').update({ family_id: fid })
     .eq('user_id', state.user.id).in('project', ['가족 일정', '가족일정']).is('family_id', null);
+  // 옛 이름 "가족일정"(띄어쓰기 없음) 업무를 "가족 일정"으로 통일. 프로젝트 목록에서도 "가족일정" 제거.
+  await sb.from('work_tasks').update({ project: '가족 일정' })
+    .eq('user_id', state.user.id).eq('project', '가족일정');
+  await sb.from('work_projects').delete().eq('user_id', state.user.id).eq('name', '가족일정');
   return null;
 }
 

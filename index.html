@@ -53,11 +53,11 @@
         <div id="projectsView" class="project-list"></div>
       </article>
       <article class="card" id="familyCard">
-        <div class="card-head"><div><h2>가족</h2><span class="hint">함께 보는 "가족 일정"</span></div><span id="familyTasksCount" class="hint"></span></div>
+        <div class="card-head"><div><h2>가족 일정</h2><span class="hint">함께 보는 일정</span></div><span id="familyTasksCount" class="hint"></span></div>
         <div id="familyStatus" class="status"></div>
         <div id="familyBody"></div>
         <div class="family-tasks-block" id="familyTasksBlock" hidden>
-          <div class="section-head">가족 일정</div>
+          
           <div id="familyTasks" class="tasks"></div>
         </div>
       </article>
@@ -169,6 +169,20 @@
         </div>
       </div>
       <div id="dayDialogList" class="day-tasks"></div>
+    </div>
+  </dialog>
+  <dialog id="projectDialog" class="day-dialog">
+    <div class="day-dialog-body">
+      <div class="day-dialog-head">
+        <div class="day-dialog-title">
+          <b id="projectDialogName">-</b>
+          <span id="projectDialogSub" class="hint"></span>
+        </div>
+        <div class="day-dialog-actions">
+          <button id="projectDialogClose" type="button" class="text-button" aria-label="닫기">×</button>
+        </div>
+      </div>
+      <div id="projectDialogList" class="day-tasks"></div>
     </div>
   </dialog>
   <dialog id="seriesDialog" class="series-dialog">

@@ -155,7 +155,7 @@ export function renderProjects() {
     const done = items.filter(t => t.done).length;
     const pct = total ? Math.round(done / total * 100) : 0;
     const color = projectColor(p === '미분류' ? null : p);
-    return `<div class="project"><div class="project-line"><span>${dot(p === '미분류' ? null : p)}${esc(p)}</span><span class="hint">${done}/${total} · ${pct}%</span></div><div class="bar"><i style="width:${pct}%;background:${color}"></i></div></div>`;
+    return `<button class="project project-btn" data-project="${esc(p)}"><div class="project-line"><span>${dot(p === '미분류' ? null : p)}${esc(p)}</span><span class="hint">${done}/${total} · ${pct}%</span></div><div class="bar"><i style="width:${pct}%;background:${color}"></i></div></button>`;
   }).join('') || '<div class="empty">이번 달 마감인 업무가 없습니다.</div>';
 
   const cur = $('#project').value;
@@ -354,6 +354,49 @@ export function closeSettingsDialog() {
 }
 
 
+
+// 공용 행 렌더러 — 날짜/프로젝트 상세 다이얼로그에서 재사용.
+function renderDayTaskRow(t, showDate = false) {
+  const members = state.family?.members || [];
+  const memberName = members.find(m => m.userId === t.userId)?.name;
+  const authorName = (t.userId === state.user?.id)
+    ? (state.user.user_metadata?.full_name || state.user.user_metadata?.name || '나')
+    : (memberName || '가족');
+  const when = showDate
+    ? (t.time ? `${fmtMd(t.date)} ${esc(t.time)}` : `${fmtMd(t.date)} 종일`)
+    : (t.time ? esc(t.time) : '종일');
+  const c = projectColor(t.project);
+  return `<button class="day-task${t.done ? ' done' : ''}" data-task-id="${esc(t.id)}">
+    <span class="dt-when">${when}</span>
+    <span class="dt-bar" style="background:${c}"></span>
+    <span class="dt-title">${esc(t.title)}</span>
+    ${userAvatarFor(t.userId, authorName)}
+  </button>`;
+}
+
+// 프로젝트 상세 다이얼로그
+export function openProjectDialog(name) {
+  const norm = name === '미분류' ? null : name;
+  const list = state.tasks.filter(t => (t.project || '미분류') === name).sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    const ad = dueDate(a), bd = dueDate(b);
+    return a.done ? bd.localeCompare(ad) : ad.localeCompare(bd);
+  });
+  const done = list.filter(t => t.done).length;
+  const c = projectColor(norm);
+  $('#projectDialogName').innerHTML = `<i class="dot-color" style="background:${c}"></i>${esc(name)}`;
+  $('#projectDialogSub').textContent = list.length ? `${done}/${list.length} 완료` : '';
+  $('#projectDialogList').innerHTML = list.length
+    ? list.map(t => renderDayTaskRow(t, true)).join('')
+    : '<div class="empty">업무가 없습니다.</div>';
+  $('#projectDialog').showModal();
+}
+
+export function closeProjectDialog() {
+  const d = $('#projectDialog');
+  if (d.open) d.close();
+}
+
 function userAvatarFor(userId, name) {
   const initial = esc((name || '?').trim()[0] || '?').toUpperCase();
   if (userId === state.user?.id) {
@@ -381,21 +424,7 @@ export function openDayDialog(dateIso) {
     if (at !== bt) return at.localeCompare(bt);
     return sortTasks(a, b);
   });
-  const members = state.family?.members || [];
-  const items = list.map(t => {
-    const memberName = members.find(m => m.userId === t.userId)?.name;
-    const authorName = (t.userId === state.user?.id)
-      ? (state.user.user_metadata?.full_name || state.user.user_metadata?.name || '나')
-      : (memberName || '가족');
-    const when = t.time ? esc(t.time) : '종일';
-    const c = projectColor(t.project);
-    return `<button class="day-task${t.done ? ' done' : ''}" data-task-id="${esc(t.id)}">
-      <span class="dt-when">${when}</span>
-      <span class="dt-bar" style="background:${c}"></span>
-      <span class="dt-title">${esc(t.title)}</span>
-      ${userAvatarFor(t.userId, authorName)}
-    </button>`;
-  }).join('');
+  const items = list.map(t => renderDayTaskRow(t, false)).join('');
   $('#dayDialogList').innerHTML = items || '<div class="empty">이 날엔 등록된 업무가 없습니다.</div>';
   $('#dayDialog').showModal();
 }
