@@ -1,7 +1,7 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
 import { iso, isValidFamilyCode, rpcErrorMessage } from './lib.js';
-import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf, openReactionsFor, closeReactionsDialog } from './ui.js';
+import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf, openReactionsFor, closeReactionsDialog, refreshOpenDialogs } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { toggleReaction } from './reactions.js';
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
@@ -281,18 +281,28 @@ $('#dayDialogAdd').onclick = () => {
   if (iso) $('#date').value = iso;
   $('#title').focus();
 };
-$('#dayDialogList').addEventListener('click', (e) => {
-  const btn = e.target.closest('.day-task');
-  if (!btn) return;
+$('#dayDialogList').addEventListener('click', async (e) => {
+  if (e.target.dataset.action === 'dt-toggle') {
+    await toggleTask(e.target.dataset.id);
+    refreshOpenDialogs();
+    return;
+  }
+  const edit = e.target.closest('[data-action="dt-edit"]');
+  if (!edit) return;
   closeDayDialog();
-  editTask(btn.dataset.taskId);
+  editTask(edit.dataset.id);
 });
 $('#projectDialogClose').onclick = closeProjectDialog;
-$('#projectDialogList').addEventListener('click', (e) => {
-  const btn = e.target.closest('.day-task');
-  if (!btn) return;
+$('#projectDialogList').addEventListener('click', async (e) => {
+  if (e.target.dataset.action === 'dt-toggle') {
+    await toggleTask(e.target.dataset.id);
+    refreshOpenDialogs();
+    return;
+  }
+  const edit = e.target.closest('[data-action="dt-edit"]');
+  if (!edit) return;
   closeProjectDialog();
-  editTask(btn.dataset.taskId);
+  editTask(edit.dataset.id);
 });
 $('#projectsView').addEventListener('click', (e) => {
   const btn = e.target.closest('.project-btn');
@@ -304,11 +314,16 @@ $('#searchBtn').onclick = openSearchDialog;
 $('#searchClose').onclick = closeSearchDialog;
 $('#searchInput').addEventListener('input', (e) => renderSearchResults(e.target.value));
 $('#searchInput').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSearchDialog(); });
-$('#searchResults').addEventListener('click', (e) => {
-  const btn = e.target.closest('.day-task');
-  if (!btn) return;
+$('#searchResults').addEventListener('click', async (e) => {
+  if (e.target.dataset.action === 'dt-toggle') {
+    await toggleTask(e.target.dataset.id);
+    refreshOpenDialogs();
+    return;
+  }
+  const edit = e.target.closest('[data-action="dt-edit"]');
+  if (!edit) return;
   closeSearchDialog();
-  editTask(btn.dataset.taskId);
+  editTask(edit.dataset.id);
 });
 // 음성 입력
 $('#micBtn').onclick = startVoiceInput;

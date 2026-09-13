@@ -544,16 +544,27 @@ function renderDayTaskRow(t, showDate = false) {
     ? (t.time ? `${fmtMd(t.date)} ${esc(t.time)}` : `${fmtMd(t.date)} 종일`)
     : (t.time ? esc(t.time) : '종일');
   const c = projectColor(t.project);
-  return `<button class="day-task${t.done ? ' done' : ''}" data-task-id="${esc(t.id)}">
-    <span class="dt-when">${when}</span>
-    <span class="dt-bar" style="background:${c}"></span>
-    <span class="dt-title">${esc(t.title)}</span>
-    ${userAvatarFor(t.userId, authorName)}
-  </button>`;
+  return `<div class="day-task${t.done ? ' done' : ''}" data-task-id="${esc(t.id)}">
+    <input class="check dt-check" type="checkbox" ${t.done ? 'checked' : ''} data-action="dt-toggle" data-id="${esc(t.id)}" style="--c:${c}" aria-label="완료 표시">
+    <button class="dt-body" type="button" data-action="dt-edit" data-id="${esc(t.id)}">
+      <span class="dt-when">${when}</span>
+      <span class="dt-bar" style="background:${c}"></span>
+      <span class="dt-title">${esc(t.title)}</span>
+      ${userAvatarFor(t.userId, authorName)}
+    </button>
+  </div>`;
+}
+
+// 다이얼로그가 열려 있으면 내부 리스트만 다시 그린다 (닫지 않는다).
+export function refreshOpenDialogs() {
+  if ($('#dayDialog')?.open && state.selectedDate) openDayDialog(state.selectedDate);
+  if ($('#projectDialog')?.open && state.openProject) openProjectDialog(state.openProject);
+  if ($('#searchDialog')?.open) renderSearchResults($('#searchInput').value);
 }
 
 // 프로젝트 상세 다이얼로그
 export function openProjectDialog(name) {
+  state.openProject = name;
   const norm = name === '미분류' ? null : name;
   const list = state.tasks.filter(t => (t.project || '미분류') === name).sort((a, b) => {
     if (a.done !== b.done) return a.done ? 1 : -1;
