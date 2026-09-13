@@ -1,8 +1,9 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
 import { iso, isValidFamilyCode, rpcErrorMessage } from './lib.js';
-import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf } from './ui.js';
+import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf, openReactionsFor, closeReactionsDialog } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
+import { toggleReaction } from './reactions.js';
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
 import { pushSupported, getPushState, enablePush, disablePush } from './notify.js';
@@ -15,6 +16,7 @@ async function handleTaskAction(e) {
   if (action === 'toggle-task' && e.type !== 'change') return;
   if (action !== 'toggle-task' && e.type !== 'click') return;
   if (action === 'toggle-task') await toggleTask(e.target.dataset.id);
+  if (action === 'react-open') return openReactionsFor(e.target.dataset.id);
   if (action === 'edit-task') editTask(e.target.dataset.id);
   if (action === 'remove-task') await removeTask(e.target.dataset.id);
   if (action === 'delete-project') {
@@ -313,6 +315,15 @@ $('#micBtn').onclick = startVoiceInput;
 // 저녁 배너의 "내일로 넘기기" (동적으로 생기므로 위임)
 $('#dueAlerts').addEventListener('click', (e) => {
   if (e.target.id === 'pushToTomorrow') pushOverdueToTomorrow();
+});
+$('#reactionsClose').onclick = closeReactionsDialog;
+$('#reactionsPalette').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.react-cell');
+  if (!btn) return;
+  const taskId = $('#reactionsTaskId').value;
+  await toggleReaction(taskId, btn.dataset.emoji);
+  openReactionsFor(taskId);   // refresh palette state
+  render();                    // refresh task rows
 });
 sb.auth.onAuthStateChange((_event, session) => { if (session && !state.user) start(); });
 start();

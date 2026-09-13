@@ -1,4 +1,5 @@
 import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween } from './lib.js';
+import { REACTION_EMOJIS, summarizeReactions } from './reactions.js';
 import { today, state, settings } from './state.js';
 
 export const $ = (s) => document.querySelector(s);
@@ -32,17 +33,23 @@ function remindBadge(t) {
 }
 
 function taskHTML(t) {
+  const reacts = t.familyId ? summarizeReactions(t.id) : '';
+  const reactBtn = t.familyId
+    ? `<button class="react-btn" data-action="react-open" data-id="${esc(t.id)}" aria-label="응원 이모지">😊</button>`
+    : '';
   return `<div class="task ${t.done ? 'done' : ''}">
     <input class="check" type="checkbox" ${t.done ? 'checked' : ''} data-action="toggle-task" data-id="${esc(t.id)}" style="--c:${projectColor(t.project)}">
     <div class="task-main">
       <div class="task-title">${esc(t.title)}</div>
       <div class="task-meta">${taskMeta(t)}</div>
+      ${reacts ? `<div class="reactions">${reacts}</div>` : ''}
     </div>
     <div class="task-side">
       ${dueInfo(t)}
       ${t.seriesId ? '<span class="badge repeat">반복</span>' : ''}
       ${remindBadge(t)}
       <span class="badge ${t.priority}">${pri(t.priority)}</span>
+      ${reactBtn}
       <button class="edit" data-action="edit-task" data-id="${esc(t.id)}">수정</button>
       <button class="delete" aria-label="삭제" data-action="remove-task" data-id="${esc(t.id)}">×</button>
     </div>
@@ -612,6 +619,27 @@ function parseIsoLocal(s) {
 
 
 // 전체 업무 검색 다이얼로그
+
+
+// 응원 팔레트 다이얼로그 — 이모지 6개, 클릭 시 토글, 닫기.
+export function openReactionsFor(taskId) {
+  const list = state.reactions?.[taskId] || [];
+  const myId = state.user?.id;
+  const cells = REACTION_EMOJIS.map(e => {
+    const mine = list.some(r => r.userId === myId && r.emoji === e);
+    const n = list.filter(r => r.emoji === e).length;
+    return `<button class="react-cell${mine ? ' mine' : ''}" data-emoji="${esc(e)}" type="button">${e}${n ? `<span>${n}</span>` : ''}</button>`;
+  }).join('');
+  $('#reactionsTaskId').value = taskId;
+  $('#reactionsPalette').innerHTML = cells;
+  $('#reactionsDialog').showModal();
+}
+
+export function closeReactionsDialog() {
+  const d = $('#reactionsDialog');
+  if (d.open) d.close();
+}
+
 export function openSearchDialog() {
   $('#searchInput').value = '';
   renderSearchResults('');

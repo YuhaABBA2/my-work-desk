@@ -2,6 +2,7 @@ import { sb } from './supabase.js';
 import { state, today } from './state.js';
 import { iso, addDays, sortTasks, occurrenceDates, splitSeriesEdit, shiftEndDate, dueDate, familyIdFor } from './lib.js';
 import { $, render, resetForm, fillEditForm, askSeriesScope, closeTaskDialog } from './ui.js';
+import { loadReactions } from './reactions.js';
 
 export async function load() {
   const { data, error } = await sb.from('work_tasks').select('*').order('task_date').order('task_time');
@@ -22,6 +23,7 @@ export async function load() {
     userId: x.user_id,
     familyId: x.family_id || null
   }));
+  await loadReactions();
   render();
 }
 

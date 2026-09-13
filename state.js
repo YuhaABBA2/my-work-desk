@@ -12,7 +12,8 @@ export const state = {
   family: null,         // { id, code, ownerId, isAdmin, members: [{ userId, name }] } | null
   settings: { showMarket: false }, // work_settings (계정별)
   calMode: localStorage.getItem('calMode') === 'week' ? 'week' : 'month',
-  weekStart: null   // 주간 뷰에서 보여지는 주의 일요일(Date). 최초 렌더에서 초기화
+  weekStart: null,  // 주간 뷰에서 보여지는 주의 일요일(Date). 최초 렌더에서 초기화
+  reactions: {}     // { [taskId]: [{userId, emoji}] }
 };
 
 // 기기별 취향은 localStorage 유지

@@ -218,3 +218,42 @@ drop policy if exists notification_log_read on public.notification_log;
 create policy notification_log_read on public.notification_log for select to authenticated
   using (user_id = (select auth.uid()));
 -- 삽입은 service_role (크론) 만.
+
+-- ---------- 응원 이모지 (가족 업무에만) ----------
+-- 한 사용자가 한 업무에 여러 이모지를 붙일 수 있다. PK = (task, user, emoji).
+create table if not exists public.task_reactions (
+  task_id uuid not null references public.work_tasks(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  emoji text not null check (char_length(emoji) between 1 and 8),
+  created_at timestamptz not null default now(),
+  primary key (task_id, user_id, emoji)
+);
+create index if not exists task_reactions_task_idx on public.task_reactions(task_id);
+alter table public.task_reactions enable row level security;
+
+-- SELECT: 그 업무를 볼 수 있는 가족 구성원 전체.
+drop policy if exists task_reactions_select on public.task_reactions;
+create policy task_reactions_select on public.task_reactions for select to authenticated
+  using (
+    exists (
+      select 1 from public.work_tasks t
+      where t.id = task_reactions.task_id
+        and (t.user_id = (select auth.uid()) or t.family_id in (select public.my_family_ids()))
+    )
+  );
+
+-- INSERT/DELETE: 나 자신의 반응만, 가족 공유 업무(family_id 있음)에만.
+drop policy if exists task_reactions_insert on public.task_reactions;
+create policy task_reactions_insert on public.task_reactions for insert to authenticated
+  with check (
+    user_id = (select auth.uid())
+    and exists (
+      select 1 from public.work_tasks t
+      where t.id = task_reactions.task_id
+        and t.family_id in (select public.my_family_ids())
+    )
+  );
+
+drop policy if exists task_reactions_delete on public.task_reactions;
+create policy task_reactions_delete on public.task_reactions for delete to authenticated
+  using (user_id = (select auth.uid()));
