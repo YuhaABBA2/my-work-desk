@@ -4,6 +4,8 @@ import { iso, isValidFamilyCode, rpcErrorMessage } from './lib.js';
 import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf, openReactionsFor, closeReactionsDialog, refreshOpenDialogs } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { toggleReaction } from './reactions.js';
+import { initHolidays } from './holidays.js';
+initHolidays();
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
 import { pushSupported, getPushState, enablePush, disablePush } from './notify.js';

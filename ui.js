@@ -1,5 +1,6 @@
 import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween } from './lib.js';
 import { REACTION_EMOJIS, summarizeReactions } from './reactions.js';
+import { holidayFor, lunarFor } from './holidays.js';
 import { today, state, settings } from './state.js';
 
 export const $ = (s) => document.querySelector(s);
@@ -256,7 +257,15 @@ export function calendar() {
       }
     }
 
-    const cellsHtml = week.map((c, ci) => `<button class="wk-cell${c.other ? ' other' : ''}${c.iso === todayIso ? ' today' : ''}${c.iso === state.selectedDate ? ' selected' : ''}" data-date="${c.iso}"><span class="wk-num">${c.n}</span>${overflow[ci] > 0 ? `<span class="wk-more">+${overflow[ci]}</span>` : ''}</button>`).join('');
+    const cellsHtml = week.map((c, ci) => {
+      const hol = holidayFor(c.iso);
+      const lun = lunarFor(c.iso);
+      const cls = ['wk-cell', c.other && 'other', c.iso === todayIso && 'today', c.iso === state.selectedDate && 'selected', hol && 'holiday'].filter(Boolean).join(' ');
+      const holChip = hol ? `<span class="wk-hol" title="${esc(hol)}">${esc(hol.replace(/\s*\(.*\)\s*/, '').replace(/\s*연휴$/, ''))}</span>` : '';
+      const lunChip = lun ? `<span class="wk-lun">${esc(lun)}</span>` : '';
+      const more = overflow[ci] > 0 ? `<span class="wk-more">+${overflow[ci]}</span>` : '';
+      return `<button class="${cls}" data-date="${c.iso}"><span class="wk-num">${c.n}${lunChip}</span>${holChip}${more}</button>`;
+    }).join('');
 
     const segsHtml = segs.filter(s => s.track < MAX_TRACKS).map(s => {
       const col = projectColor(s.task.project);
@@ -317,8 +326,10 @@ function renderWeekView() {
   for (let i = 0; i < 7; i++) {
     const d = new Date(start); d.setDate(start.getDate() + i);
     const isoD = iso(d);
-    const cls = ['wv-head', isoD === todayIso ? 'today' : '', isoD === state.selectedDate ? 'selected' : ''].filter(Boolean).join(' ');
-    headCols.push(`<button class="${cls}" data-date="${isoD}"><span class="wv-dow">${WV_DAY_NAMES[i]}</span><span class="wv-num">${d.getDate()}</span></button>`);
+    const hol = holidayFor(isoD);
+    const cls = ['wv-head', isoD === todayIso && 'today', isoD === state.selectedDate && 'selected', hol && 'holiday'].filter(Boolean).join(' ');
+    const holLabel = hol ? `<span class="wv-hol" title="${esc(hol)}">${esc(hol.replace(/\s*\(.*\)\s*/, '').replace(/\s*연휴$/, ''))}</span>` : '';
+    headCols.push(`<button class="${cls}" data-date="${isoD}"><span class="wv-dow">${WV_DAY_NAMES[i]}</span><span class="wv-num">${d.getDate()}</span>${holLabel}</button>`);
   }
   const headHtml = `<div class="wv-head-row"><div class="wv-head-time"></div>${headCols.join('')}</div>`;
 
@@ -607,7 +618,11 @@ export function openDayDialog(dateIso) {
     const D = parts.find(p => p.type === 'day')?.value || '';
     if (M && D) lunar = `음력 ${M}.${D}`;
   } catch (_) {}
-  $('#dayDialogSub').textContent = lunar;
+  const hol = holidayFor(dateIso);
+  const subParts = [lunar, hol].filter(Boolean);
+  $('#dayDialogSub').innerHTML = subParts.length
+    ? subParts.map((p, i) => i === 1 ? `<span class="sub-hol">${esc(p)}</span>` : esc(p)).join(' · ')
+    : '';
 
   const list = visibleTasks().filter(t => spansDay(t, dateIso)).sort((a, b) => {
     const at = a.time || '99:99', bt = b.time || '99:99';
