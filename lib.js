@@ -85,18 +85,22 @@ export function repeatLabel(repeat) {
     : '';
 }
 
-export function occurrenceDates(startIso, repeat, count) {
+export function occurrenceDates(startIso, repeat, count, back = 0) {
   if (repeat === 'none') return [startIso];
   const start = parseIso(startIso);
-  const n = Math.max(1, count);
+  const forward = Math.max(1, count);
+  const backward = Math.max(0, Number(back) || 0);
+  // 회차별 offset: -backward … -1, 0, 1 … forward-1 (총 backward+forward 개, 시간 순).
+  const offsets = [];
+  for (let i = -backward; i < forward; i++) offsets.push(i);
   // 음력 매년: 시작일의 음력 (M,D) 을 뽑아 매년 그 음력에 해당하는 양력 날짜.
   if (repeat === 'yearly-lunar') {
     const lp = lunarParts(startIso);
     if (!lp) return [startIso];
     const startYear = start.getFullYear();
-    return Array.from({ length: n }, (_, i) => solarForLunarInYear(startYear + i, lp.M, lp.D) || startIso);
+    return offsets.map(i => solarForLunarInYear(startYear + i, lp.M, lp.D) || startIso);
   }
-  return Array.from({ length: n }, (_, i) => {
+  return offsets.map(i => {
     if (repeat === 'daily') return iso(addDays(start, i));
     if (repeat === 'weekly') return iso(addDays(start, i * 7));
     if (repeat === 'monthly') return iso(addMonths(start, i));

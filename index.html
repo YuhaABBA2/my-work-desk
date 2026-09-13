@@ -116,7 +116,7 @@
           </div>
           <div class="form-row">
             <select id="repeat"><option value="none" selected>반복 없음</option><option value="daily">매일 반복</option><option value="weekly">매주 반복</option><option value="monthly">매월 반복</option><option value="yearly">매년 반복</option></select>
-            <input id="repeatCount" type="number" min="1" max="24" value="1" title="반복 횟수">
+            <div class="count-group"><input id="repeatBack" type="number" min="0" max="24" value="0" title="이전 회차 포함" placeholder="이전 0"><input id="repeatCount" type="number" min="1" max="24" value="1" title="이후 회차" placeholder="이후 1"></div>
           </div>
           <div class="check-row">
             <span class="hint">알림</span>

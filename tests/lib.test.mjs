@@ -30,6 +30,17 @@ test('occurrenceDates: yearly (양력) 은 같은 월·일', () => {
   assert.deepEqual(occurrenceDates('2026-03-15', 'yearly', 3), ['2026-03-15', '2027-03-15', '2028-03-15']);
 });
 
+test('occurrenceDates: back 매개변수는 이전 회차를 앞에 붙인다', () => {
+  assert.deepEqual(
+    occurrenceDates('2026-09-14', 'weekly', 2, 2),
+    ['2026-08-31', '2026-09-07', '2026-09-14', '2026-09-21']
+  );
+  assert.deepEqual(
+    occurrenceDates('2026-03-15', 'yearly', 2, 3),
+    ['2023-03-15', '2024-03-15', '2025-03-15', '2026-03-15', '2027-03-15']
+  );
+});
+
 test('occurrenceDates: yearly-lunar 은 같은 음력일에 해당하는 양력', () => {
   // 2026-09-13 은 음력 8/3. 2027 의 음력 8/3 은 2027-09-03. 2028 의 음력 8/3 은 2028-09-20.
   const got = occurrenceDates('2026-09-13', 'yearly-lunar', 3);

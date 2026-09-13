@@ -427,10 +427,12 @@ export function resetForm() {
   $('#submitTask').textContent = '추가하기';
   $('#repeat').disabled = false;
   $('#repeatCount').disabled = false;
+  if ($('#repeatBack')) $('#repeatBack').disabled = false;
   $('#addForm').reset();
   $('#date').value = state.selectedDate || iso(today);
   $('#endDate').value = '';
   $('#repeatCount').value = 1;
+  if ($('#repeatBack')) $('#repeatBack').value = 0;
   if ($('#isLunar')) $('#isLunar').checked = false;
   setAllDay(false);
   renderProjectOptions(undefined);
@@ -511,6 +513,7 @@ export function fillEditForm(t) {
   $('#repeat').value = 'none';
   $('#repeat').disabled = true;
   $('#repeatCount').disabled = true;
+  if ($('#repeatBack')) $('#repeatBack').disabled = true;
   if ($('#isLunar')) $('#isLunar').checked = false;
   updateLunarPreview();
 }

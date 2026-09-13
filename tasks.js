@@ -80,9 +80,10 @@ export async function saveTask(e) {
   const isLunar = $('#isLunar')?.checked;
   const repeat = (rawRepeat === 'yearly' && isLunar) ? 'yearly-lunar' : rawRepeat;
   const count = repeat === 'none' ? 1 : Math.min(24, Math.max(1, Number($('#repeatCount').value || 1)));
+  const back = repeat === 'none' ? 0 : Math.min(24, Math.max(0, Number($('#repeatBack')?.value || 0)));
   // 반복이면 시리즈 ID 하나를 모든 행에 붙인다. 회차 표시는 메모 대신 series_id 배지로 대신한다.
   const seriesId = repeat === 'none' ? null : crypto.randomUUID();
-  const records = occurrenceDates(base.task_date, repeat, count).map(date => ({
+  const records = occurrenceDates(base.task_date, repeat, count, back).map(date => ({
     user_id: state.user.id,
     title: base.title,
     task_date: date,
