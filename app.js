@@ -1,7 +1,7 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
 import { iso, isValidFamilyCode, rpcErrorMessage } from './lib.js';
-import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults } from './ui.js';
+import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
@@ -210,6 +210,24 @@ $('#todayTasks').addEventListener('change', handleTaskAction);
 $('#weekTasks').addEventListener('click', handleTaskAction);
 $('#weekTasks').addEventListener('change', handleTaskAction);
 $('#calendar').addEventListener('click', e => {
+  // 주간 뷰: 종일/기간 세그먼트 또는 시간 이벤트 클릭 → 편집.
+  const ev = e.target.closest('.wv-event, .wv-seg');
+  if (ev) { editTask(ev.dataset.taskId); return; }
+  // 주간 뷰: 시간 슬롯 클릭 → 그 시각으로 일정 추가.
+  const slot = e.target.closest('.wv-slot');
+  if (slot) {
+    state.selectedDate = slot.dataset.date;
+    openTaskDialog('add');
+    $('#date').value = slot.dataset.date;
+    $('#time').value = slot.dataset.time;
+    $('#allDay').checked = false;
+    setAllDay(false);
+    $('#title').focus();
+    return;
+  }
+  // 주간 뷰: 헤더의 날짜 클릭 → 그 날짜 상세.
+  const head = e.target.closest('.wv-head');
+  if (head) { selectDate(head.dataset.date); return; }
   const day = e.target.closest('.wk-cell');
   if (day?.dataset.date) selectDate(day.dataset.date);
 });
@@ -219,9 +237,31 @@ $('#addTaskBtn').onclick = () => openTaskDialog('add');
 $('#fabAdd').onclick = () => openTaskDialog('add');
 $('#allDay').addEventListener('change', e => setAllDay(e.target.checked));
 $('#project').addEventListener('change', syncShareFamilyForProject);
-$('#prev').onclick = () => { state.view.setMonth(state.view.getMonth() - 1); calendar(); };
-$('#next').onclick = () => { state.view.setMonth(state.view.getMonth() + 1); calendar(); };
-$('#thisMonth').onclick = () => { state.view = new Date(today.getFullYear(), today.getMonth(), 1); state.selectedDate = iso(today); $('#date').value = state.selectedDate; calendar(); };
+$('#prev').onclick = () => {
+  if (state.calMode === 'week') {
+    state.weekStart = new Date(state.weekStart); state.weekStart.setDate(state.weekStart.getDate() - 7);
+  } else {
+    state.view.setMonth(state.view.getMonth() - 1);
+  }
+  calendar();
+};
+$('#next').onclick = () => {
+  if (state.calMode === 'week') {
+    state.weekStart = new Date(state.weekStart); state.weekStart.setDate(state.weekStart.getDate() + 7);
+  } else {
+    state.view.setMonth(state.view.getMonth() + 1);
+  }
+  calendar();
+};
+$('#thisMonth').onclick = () => {
+  if (state.calMode === 'week') state.weekStart = weekStartOf(today);
+  else state.view = new Date(today.getFullYear(), today.getMonth(), 1);
+  state.selectedDate = iso(today);
+  $('#date').value = state.selectedDate;
+  calendar();
+};
+$('#calMonth').onclick = () => { state.calMode = 'month'; localStorage.setItem('calMode', 'month'); calendar(); };
+$('#calWeek').onclick = () => { state.calMode = 'week'; localStorage.setItem('calMode', 'week'); if (!state.weekStart) state.weekStart = weekStartOf(today); calendar(); };
 $('#addProject').onclick = onAddProject;
 $('#familyBody').addEventListener('click', handleFamilyAction);
 $('#familyBody').addEventListener('keydown', e => {

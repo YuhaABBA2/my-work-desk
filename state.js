@@ -10,7 +10,9 @@ export const state = {
   projects: [],        // 프로젝트 이름 목록 (Task 3부터 Supabase)
   projectsReady: false, // work_projects 조회 성공 여부
   family: null,         // { id, code, ownerId, isAdmin, members: [{ userId, name }] } | null
-  settings: { showMarket: false } // work_settings (계정별)
+  settings: { showMarket: false }, // work_settings (계정별)
+  calMode: localStorage.getItem('calMode') === 'week' ? 'week' : 'month',
+  weekStart: null   // 주간 뷰에서 보여지는 주의 일요일(Date). 최초 렌더에서 초기화
 };
 
 // 기기별 취향은 localStorage 유지

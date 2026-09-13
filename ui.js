@@ -181,6 +181,16 @@ export function renderProjects() {
 }
 
 export function calendar() {
+  // 주간 뷰 초기화 (앱 시작 시 오늘이 속한 주의 일요일로 세팅).
+  if (!state.weekStart) state.weekStart = weekStartOf(today);
+  const monthBtn = $('#calMonth'), weekBtn = $('#calWeek');
+  if (monthBtn && weekBtn) {
+    monthBtn.setAttribute('aria-selected', state.calMode === 'month');
+    weekBtn.setAttribute('aria-selected', state.calMode === 'week');
+    monthBtn.classList.toggle('active', state.calMode === 'month');
+    weekBtn.classList.toggle('active', state.calMode === 'week');
+  }
+  if (state.calMode === 'week') return renderWeekView();
   const y = state.view.getFullYear();
   const m = state.view.getMonth();
   const first = new Date(y, m, 1).getDay();
@@ -253,6 +263,144 @@ export function calendar() {
   }).join('');
 
   $('#calendar').innerHTML = weekHtml;
+}
+
+
+// 주어진 Date 의 그 주 일요일(00:00) Date.
+export function weekStartOf(d) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  x.setDate(x.getDate() - x.getDay());
+  return x;
+}
+
+const WV_HOURS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];   // 06:00 ~ 21:00 (다음 줄=22:00)
+const WV_HOUR_H = 44;                                                              // 한 시간 = 44px
+const WV_DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+
+function timeToMinutes(t) {
+  if (!t || typeof t !== 'string') return null;
+  const [h, m] = t.split(':').map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  return h * 60 + m;
+}
+
+function estMinutes(t) {
+  // task_time 만 있고 지속시간 필드가 없다면 기본 60분.
+  return 60;
+}
+
+function renderWeekView() {
+  const start = new Date(state.weekStart);
+  const end = new Date(start); end.setDate(start.getDate() + 6);
+  const startIso = iso(start), endIso = iso(end);
+  const todayIso = iso(today);
+
+  $('#monthLabel').textContent =
+    `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 – ${end.getMonth() + 1}월 ${end.getDate()}일`;
+
+  const shown = visibleTasks();
+  // 이번 주와 겹치는 업무만.
+  const weekTasks = shown.filter(t => t.date <= endIso && dueDate(t) >= startIso);
+  const timed = weekTasks.filter(t => t.time && t.date === dueDate(t));   // 시간이 있고 단일일자
+  const allDay = weekTasks.filter(t => !(t.time && t.date === dueDate(t))); // 종일/기간
+
+  // ── 상단 날짜 헤더 ───────────────────────────────────────────
+  const headCols = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    const isoD = iso(d);
+    const cls = ['wv-head', isoD === todayIso ? 'today' : '', isoD === state.selectedDate ? 'selected' : ''].filter(Boolean).join(' ');
+    headCols.push(`<button class="${cls}" data-date="${isoD}"><span class="wv-dow">${WV_DAY_NAMES[i]}</span><span class="wv-num">${d.getDate()}</span></button>`);
+  }
+  const headHtml = `<div class="wv-head-row"><div class="wv-head-time"></div>${headCols.join('')}</div>`;
+
+  // ── 종일/기간 스트립 (트랙 배치) ────────────────────────────
+  const sortedAllDay = [...allDay].sort((a, b) => {
+    const spanA = daysBetween(a.date, dueDate(a));
+    const spanB = daysBetween(b.date, dueDate(b));
+    if (spanB !== spanA) return spanB - spanA;
+    return sortTasks(a, b);
+  });
+  const segs = [];
+  for (const t of sortedAllDay) {
+    const sCol = Math.max(0, daysBetween(startIso, t.date));
+    const eCol = Math.min(6, daysBetween(startIso, dueDate(t)));
+    segs.push({ task: t, startCol: sCol, endCol: eCol });
+  }
+  const tracks = [];
+  for (const seg of segs) {
+    let tr = 0;
+    while (tr < tracks.length && tracks[tr].some(o => !(seg.endCol < o.startCol || seg.startCol > o.endCol))) tr++;
+    if (!tracks[tr]) tracks[tr] = [];
+    tracks[tr].push(seg);
+    seg.track = tr;
+  }
+  const trackCount = tracks.length;
+  const stripH = Math.max(trackCount * 22 + 6, 8);
+  const stripSegs = segs.map(s => {
+    const c = projectColor(s.task.project);
+    const leftPct = (s.startCol / 7) * 100;
+    const widthPct = ((s.endCol - s.startCol + 1) / 7) * 100;
+    const top = 3 + s.track * 22;
+    return `<span class="wv-seg" data-task-id="${esc(s.task.id)}" style="left:calc(${leftPct.toFixed(3)}% + 2px);width:calc(${widthPct.toFixed(3)}% - 4px);top:${top}px;background:${c}22;color:${c};border-left:3px solid ${c}" title="${esc(s.task.title)}">${esc(s.task.title)}</span>`;
+  }).join('');
+  const stripHtml = trackCount
+    ? `<div class="wv-strip"><div class="wv-strip-time">종일</div><div class="wv-strip-cells" style="height:${stripH}px">${stripSegs}</div></div>`
+    : '';
+
+  // ── 시간 격자 ────────────────────────────────────────────
+  const rows = WV_HOURS.map(h => {
+    const cells = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      const isoD = iso(d);
+      const startAt = `${String(h).padStart(2, '0')}:00`;
+      cells.push(`<button class="wv-slot" data-date="${isoD}" data-time="${startAt}" aria-label="${esc(isoD)} ${startAt}"></button>`);
+    }
+    return `<div class="wv-row"><div class="wv-time">${String(h).padStart(2, '0')}:00</div>${cells.join('')}</div>`;
+  }).join('');
+  const gridH = WV_HOURS.length * WV_HOUR_H;
+
+  // 타임드 이벤트 배치 (열별로 그룹지어 겹침 감지 후 폭 나눔).
+  const bounds = { top: WV_HOURS[0] * 60, bot: (WV_HOURS[WV_HOURS.length - 1] + 1) * 60 };
+  const byCol = [[], [], [], [], [], [], []];
+  for (const t of timed) {
+    const col = daysBetween(startIso, t.date);
+    if (col < 0 || col > 6) continue;
+    const startMin = timeToMinutes(t.time);
+    if (startMin == null) continue;
+    const endMin = Math.min(bounds.bot, startMin + estMinutes(t));
+    if (endMin <= bounds.top || startMin >= bounds.bot) continue;
+    const s0 = Math.max(startMin, bounds.top);
+    byCol[col].push({ task: t, s0, e0: endMin });
+  }
+  const evHtmls = [];
+  for (let col = 0; col < 7; col++) {
+    const list = byCol[col].sort((a, b) => a.s0 - b.s0 || b.e0 - a.e0);
+    // 인접 겹침 그룹.
+    const groups = [];
+    let cur = null, curEnd = -1;
+    for (const ev of list) {
+      if (!cur || ev.s0 >= curEnd) { cur = [ev]; groups.push(cur); curEnd = ev.e0; }
+      else { cur.push(ev); curEnd = Math.max(curEnd, ev.e0); }
+    }
+    for (const g of groups) {
+      const n = g.length;
+      g.forEach((ev, i) => {
+        const c = projectColor(ev.task.project);
+        const topPx = (ev.s0 - bounds.top) / 60 * WV_HOUR_H;
+        const hPx = Math.max(20, (ev.e0 - ev.s0) / 60 * WV_HOUR_H - 2);
+        const colW = 100 / 7;
+        const leftPct = col * colW + (i / n) * colW;
+        const widthPct = (1 / n) * colW;
+        evHtmls.push(`<span class="wv-event" data-task-id="${esc(ev.task.id)}" style="left:calc(${leftPct.toFixed(3)}% + 2px);width:calc(${widthPct.toFixed(3)}% - 4px);top:${topPx.toFixed(1)}px;height:${hPx.toFixed(1)}px;background:${c}22;color:${c};border-left:3px solid ${c}"><b>${esc(ev.task.time)}</b> ${esc(ev.task.title)}</span>`);
+      });
+    }
+  }
+
+  const gridHtml = `<div class="wv-grid" style="height:${gridH}px">${rows}<div class="wv-events">${evHtmls.join('')}</div></div>`;
+  $('#calendar').innerHTML = `<div class="wv">${headHtml}${stripHtml}${gridHtml}</div>`;
 }
 
 export function resetForm() {
