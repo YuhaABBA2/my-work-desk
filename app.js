@@ -1,7 +1,7 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
 import { iso, isValidFamilyCode, rpcErrorMessage } from './lib.js';
-import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf, openReactionsFor, closeReactionsDialog, refreshOpenDialogs } from './ui.js';
+import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf, openReactionsFor, closeReactionsDialog, refreshOpenDialogs, updateLunarPreview } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { toggleReaction } from './reactions.js';
 import { initHolidays } from './holidays.js';
@@ -240,6 +240,8 @@ $('#closeTaskDialog').onclick = closeTaskDialog;
 $('#addTaskBtn').onclick = () => openTaskDialog('add');
 $('#fabAdd').onclick = () => openTaskDialog('add');
 $('#allDay').addEventListener('change', e => setAllDay(e.target.checked));
+$('#date').addEventListener('change', updateLunarPreview);
+$('#isLunar').addEventListener('change', updateLunarPreview);
 $('#project').addEventListener('change', syncShareFamilyForProject);
 $('#prev').onclick = () => {
   if (state.calMode === 'week') {

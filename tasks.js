@@ -76,7 +76,9 @@ export async function saveTask(e) {
     return;
   }
 
-  const repeat = $('#repeat').value;
+  const rawRepeat = $('#repeat').value;
+  const isLunar = $('#isLunar')?.checked;
+  const repeat = (rawRepeat === 'yearly' && isLunar) ? 'yearly-lunar' : rawRepeat;
   const count = repeat === 'none' ? 1 : Math.min(24, Math.max(1, Number($('#repeatCount').value || 1)));
   // 반복이면 시리즈 ID 하나를 모든 행에 붙인다. 회차 표시는 메모 대신 series_id 배지로 대신한다.
   const seriesId = repeat === 'none' ? null : crypto.randomUUID();

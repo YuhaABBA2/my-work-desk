@@ -431,10 +431,27 @@ export function resetForm() {
   $('#date').value = state.selectedDate || iso(today);
   $('#endDate').value = '';
   $('#repeatCount').value = 1;
+  if ($('#isLunar')) $('#isLunar').checked = false;
   setAllDay(false);
   renderProjectOptions(undefined);
   setShareFamily(false, false);
   syncShareFamilyForProject();
+  updateLunarPreview();
+}
+
+// "음력" 체크 상태에 따라 시작일 아래 표시.
+export function updateLunarPreview() {
+  const box = $('#lunarPreview');
+  if (!box) return;
+  const iso = $('#date').value;
+  if (!iso) { box.textContent = ''; return; }
+  if ($('#isLunar')?.checked) {
+    const lp = lunarFor(iso);
+    box.textContent = lp ? `= 음력 ${lp}` : '';
+  } else {
+    const lp = lunarFor(iso);
+    box.textContent = lp ? `(음력 ${lp})` : '';
+  }
 }
 
 // 프로젝트 select 옵션. selected 가 목록에 없으면 임시 옵션으로 넣는다(옛 이름, null → 미분류).
@@ -494,6 +511,8 @@ export function fillEditForm(t) {
   $('#repeat').value = 'none';
   $('#repeat').disabled = true;
   $('#repeatCount').disabled = true;
+  if ($('#isLunar')) $('#isLunar').checked = false;
+  updateLunarPreview();
 }
 
 // 업무 폼 다이얼로그. mode='add' 는 폼 초기화, 'edit' 는 fillEditForm 이 먼저 채웠다고 가정.
