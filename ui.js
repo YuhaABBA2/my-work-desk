@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isTodayTask } from './lib.js';
 import { REACTION_EMOJIS, summarizeReactions } from './reactions.js';
 import { holidayFor, lunarFor } from './holidays.js';
 import { today, state, settings } from './state.js';
@@ -70,7 +70,7 @@ export function render() {
   $('#openCount').textContent = personalOpen.length;
   $('#doneCount').textContent = personalDone.length;
   const personalShown = shown.filter(t => !t.familyId);
-  $('#todayTasks').innerHTML = personalShown.filter(t => spansDay(t, td)).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">오늘 등록된 업무가 없습니다.</div>';
+  $('#todayTasks').innerHTML = personalShown.filter(t => isTodayTask(t, td)).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">오늘 등록된 업무가 없습니다.</div>';
   $('#weekTasks').innerHTML = personalShown.filter(t => !t.done && dueDate(t) >= td && dueDate(t) <= until).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">이번주 업무일정이 없습니다.</div>';
   const dueSoon = personalOpen.filter(t => dueDate(t) <= iso(addDays(today, 3))).sort(sortTasks);
   const alerts = [];
