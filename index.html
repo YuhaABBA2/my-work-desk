@@ -48,7 +48,6 @@
             <article class="card">
         <div class="card-head"><h2>프로젝트 관리</h2><span class="hint">자주 쓰는 카테고리</span></div>
         <div id="projectStatus" class="status"></div>
-        <div class="project-add"><input id="newProject" maxlength="50" placeholder="새 카테고리"><button id="addProject" class="tool">추가</button></div>
         <div id="projectChips" class="chips"></div>
         <div id="projectsView" class="project-list"></div>
       </article>
@@ -145,6 +144,11 @@
         <h3>알림</h3>
         <div class="settings-row"><span id="pushStateLabel">이 기기의 마감 알림</span><button id="pushToggleBtn" class="tool">알림 켜기</button></div>
         <p class="hint">알림을 켜면 업무별로 저장한 "1시간 전"·"하루 전" 시점에 이 기기로 알림이 옵니다.</p>
+      </div>
+      <div class="settings-section">
+        <h3>프로젝트 (카테고리)</h3>
+        <div class="project-add"><input id="newProject" maxlength="50" placeholder="새 카테고리"><button id="addProject" class="tool">추가</button></div>
+        <p class="hint">추가한 카테고리는 프로젝트 관리 카드의 칩 목록에 나타납니다. 고정 3개(회사 업무·개인 일정·가족 일정)는 삭제할 수 없습니다.</p>
       </div>
       <div class="settings-section" id="familyInviteSection" hidden>
         <h3>가족 초대</h3>
