@@ -144,15 +144,19 @@ export function renderProjects() {
     return `<span class="chip ${fixed ? 'fixed' : ''}">${dot(p)}${esc(p)}${fixed ? '' : ` <button data-action="delete-project" data-project="${esc(p)}">×</button>`}</span>`;
   }).join('');
 
-  const ongoing = state.tasks.filter(t => !t.done);
+  // 이번 달 마감(dueDate)이 이 달인 업무만 카운트 — 시간이 지나도 카드가 무의미해지지 않도록.
+  const y = today.getFullYear(), m = String(today.getMonth() + 1).padStart(2, '0');
+  const monthPrefix = `${y}-${m}`;
+  const monthTasks = state.tasks.filter(t => dueDate(t).startsWith(monthPrefix));
   const groups = {};
-  ongoing.forEach(t => { const p = t.project || '미분류'; (groups[p] ??= []).push(t); });
+  monthTasks.forEach(t => { const p = t.project || '미분류'; (groups[p] ??= []).push(t); });
   $('#projectsView').innerHTML = Object.entries(groups).map(([p, items]) => {
-    const all = state.tasks.filter(t => (t.project || '미분류') === p);
-    const pct = Math.round((all.length - items.length) / all.length * 100);
+    const total = items.length;
+    const done = items.filter(t => t.done).length;
+    const pct = total ? Math.round(done / total * 100) : 0;
     const color = projectColor(p === '미분류' ? null : p);
-    return `<div class="project"><div class="project-line"><span>${dot(p === '미분류' ? null : p)}${esc(p)}</span><span class="hint">${items.length}건 남음</span></div><div class="bar"><i style="width:${pct}%;background:${color}"></i></div></div>`;
-  }).join('') || '<div class="empty">프로젝트별 업무를 등록해 보세요.</div>';
+    return `<div class="project"><div class="project-line"><span>${dot(p === '미분류' ? null : p)}${esc(p)}</span><span class="hint">${done}/${total} · ${pct}%</span></div><div class="bar"><i style="width:${pct}%;background:${color}"></i></div></div>`;
+  }).join('') || '<div class="empty">이번 달 마감인 업무가 없습니다.</div>';
 
   const cur = $('#project').value;
   renderProjectOptions(state.editId ? (cur || null) : (state.projects.includes(cur) ? cur : undefined));
