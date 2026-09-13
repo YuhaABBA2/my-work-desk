@@ -235,6 +235,10 @@ test('isPersonalTask: 가족 일정 프로젝트는 누가 만들었든 false (�
   assert.equal(isPersonalTask({ project: '가족일정', familyId: 'fam1', userId: 'spouse' }, 'me'), false);
 });
 
+test('isPersonalTask: 가족이 없는 사용자의 가족 일정 업무(familyId null)는 내 업무로 남는다', () => {
+  assert.equal(isPersonalTask({ project: '가족 일정', familyId: null, userId: 'me' }, 'me'), true);
+});
+
 test('isPersonalTask: 로그인 전(myId 없음)엔 공유 업무를 내 것으로 치지 않는다', () => {
   assert.equal(isPersonalTask({ project: '회사 업무', familyId: 'fam1', userId: undefined }, undefined), false);
 });
