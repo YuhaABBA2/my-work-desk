@@ -126,6 +126,13 @@ export function dueDate(t) { return t.endDate || t.date; }
 export function spansDay(t, dayIso) { return t.date <= dayIso && dayIso <= dueDate(t); }
 export function daysBetween(aIso, bIso) { return Math.round((parseIso(bIso) - parseIso(aIso)) / 86400000); }
 
+// "오늘 해야 할 일" 목록 기준. 오늘이 기간 안이거나, 미완료인데 마감이 3일 안(지난 것 포함)이면 오늘 목록.
+// 마감 임박 배너(dueDate ≤ 오늘+3, 미완료)와 같은 기준을 쓴다 — 배너는 2건인데 목록은 1건이던 어긋남을 막는다.
+export function isTodayTask(t, todayIso) {
+  if (spansDay(t, todayIso)) return true;
+  return !t.done && daysBetween(todayIso, dueDate(t)) <= 3;
+}
+
 // 배지 판정. 'past' 지남 · 'today' 오늘 마감 · 'ongoing' 시작했고 마감 전 · 'soon:N' N일 뒤 마감(≤3) · '' 그 외
 export function dueState(t, todayIso) {
   const diff = daysBetween(todayIso, dueDate(t));

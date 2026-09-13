@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   iso, parseIso, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd,
+  dueState, shiftEndDate, fmtMd, isTodayTask,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage
 } from '../lib.js';
 
@@ -213,4 +213,26 @@ test('rpcErrorMessage', () => {
   assert.equal(rpcErrorMessage({ message: 'P0001: ALREADY_MEMBER' }), '이미 가족에 속해 있습니다.');
   assert.equal(rpcErrorMessage({ message: 'network down' }), 'network down');
   assert.equal(rpcErrorMessage(null), '요청을 처리하지 못했습니다.');
+});
+
+// "오늘 해야 할 일" 목록 기준 (2026-09-14, 마감 임박 배너엔 2건인데 목록엔 1건만 뜨던 결함):
+// 오늘이 기간 안이거나, 미완료인데 마감이 오늘+3일 안(지난 것 포함)이면 오늘 목록에 둔다.
+test('isTodayTask: 오늘이 기간 안이면 완료 여부와 무관하게 true', () => {
+  assert.equal(isTodayTask({ date: '2026-09-13', endDate: '2026-09-14', done: false }, '2026-09-14'), true);
+  assert.equal(isTodayTask({ date: '2026-09-14', done: true }, '2026-09-14'), true);
+});
+
+test('isTodayTask: 내일 시작·3일 내 마감인 미완료는 true (배너와 같은 기준)', () => {
+  assert.equal(isTodayTask({ date: '2026-09-15', endDate: '2026-09-16', done: false }, '2026-09-14'), true);
+  assert.equal(isTodayTask({ date: '2026-09-17', done: false }, '2026-09-14'), true);   // 정확히 +3
+});
+
+test('isTodayTask: 마감 지난 미완료는 true, 완료된 건 false', () => {
+  assert.equal(isTodayTask({ date: '2026-09-10', done: false }, '2026-09-14'), true);
+  assert.equal(isTodayTask({ date: '2026-09-10', done: true }, '2026-09-14'), false);
+});
+
+test('isTodayTask: 4일 뒤 마감·기간 밖이면 false', () => {
+  assert.equal(isTodayTask({ date: '2026-09-18', done: false }, '2026-09-14'), false);
+  assert.equal(isTodayTask({ date: '2026-09-15', endDate: '2026-09-16', done: true }, '2026-09-14'), false);
 });
