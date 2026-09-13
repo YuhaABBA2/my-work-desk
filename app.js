@@ -161,7 +161,7 @@ $('#todayTasks').addEventListener('change', handleTaskAction);
 $('#weekTasks').addEventListener('click', handleTaskAction);
 $('#weekTasks').addEventListener('change', handleTaskAction);
 $('#calendar').addEventListener('click', e => {
-  const day = e.target.closest('.day');
+  const day = e.target.closest('.wk-cell');
   if (day?.dataset.date) selectDate(day.dataset.date);
 });
 $('#projectChips').addEventListener('click', handleTaskAction);
