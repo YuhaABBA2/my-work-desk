@@ -287,6 +287,11 @@ $('#dayDialogList').addEventListener('click', async (e) => {
     refreshOpenDialogs();
     return;
   }
+  if (e.target.dataset.action === 'dt-del') {
+    await removeTask(e.target.dataset.id);
+    refreshOpenDialogs();
+    return;
+  }
   const edit = e.target.closest('[data-action="dt-edit"]');
   if (!edit) return;
   closeDayDialog();
@@ -296,6 +301,11 @@ $('#projectDialogClose').onclick = closeProjectDialog;
 $('#projectDialogList').addEventListener('click', async (e) => {
   if (e.target.dataset.action === 'dt-toggle') {
     await toggleTask(e.target.dataset.id);
+    refreshOpenDialogs();
+    return;
+  }
+  if (e.target.dataset.action === 'dt-del') {
+    await removeTask(e.target.dataset.id);
     refreshOpenDialogs();
     return;
   }
@@ -317,6 +327,11 @@ $('#searchInput').addEventListener('keydown', (e) => { if (e.key === 'Escape') c
 $('#searchResults').addEventListener('click', async (e) => {
   if (e.target.dataset.action === 'dt-toggle') {
     await toggleTask(e.target.dataset.id);
+    refreshOpenDialogs();
+    return;
+  }
+  if (e.target.dataset.action === 'dt-del') {
+    await removeTask(e.target.dataset.id);
     refreshOpenDialogs();
     return;
   }

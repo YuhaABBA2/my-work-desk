@@ -552,6 +552,7 @@ function renderDayTaskRow(t, showDate = false) {
       <span class="dt-title">${esc(t.title)}</span>
       ${userAvatarFor(t.userId, authorName)}
     </button>
+    <button class="dt-del" type="button" data-action="dt-del" data-id="${esc(t.id)}" aria-label="삭제">×</button>
   </div>`;
 }
 
