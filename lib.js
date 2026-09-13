@@ -126,13 +126,6 @@ export function dueDate(t) { return t.endDate || t.date; }
 export function spansDay(t, dayIso) { return t.date <= dayIso && dayIso <= dueDate(t); }
 export function daysBetween(aIso, bIso) { return Math.round((parseIso(bIso) - parseIso(aIso)) / 86400000); }
 
-// "오늘 해야 할 일" 목록 기준. 오늘이 기간 안이거나, 미완료인데 마감이 3일 안(지난 것 포함)이면 오늘 목록.
-// 마감 임박 배너(dueDate ≤ 오늘+3, 미완료)와 같은 기준을 쓴다 — 배너는 2건인데 목록은 1건이던 어긋남을 막는다.
-export function isTodayTask(t, todayIso) {
-  if (spansDay(t, todayIso)) return true;
-  return !t.done && daysBetween(todayIso, dueDate(t)) <= 3;
-}
-
 // 배지 판정. 'past' 지남 · 'today' 오늘 마감 · 'ongoing' 시작했고 마감 전 · 'soon:N' N일 뒤 마감(≤3) · '' 그 외
 export function dueState(t, todayIso) {
   const diff = daysBetween(todayIso, dueDate(t));
@@ -175,6 +168,18 @@ export function isFamilyProject(name) {
 export function familyIdFor(project, family, shareOverride) {
   const share = isFamilyProject(project) || !!shareOverride;
   return share && family ? family.id : null;
+}
+
+// "내 업무" 판정 — 오늘 해야 할 일·이번 주 마감·남은 업무 카운트·마감 임박 배너의 모집단.
+// "가족과 공유"는 캘린더에서 같이 보이게 하는 표시일 뿐, 내 업무를 가족 일정으로 바꾸지 않는다.
+// 빠지는 건 두 가지뿐: 가족에 묶인 가족 일정 프로젝트(가족 카드로 간다) · 가족이 만든 공유 업무.
+// 가족이 없는 사용자의 '가족 일정' 업무는 familyId가 null이라 내 업무로 남는다 — 가족 카드가 숨겨져 있어
+// 여기서마저 빼면 어디에도 안 보인다 (가족을 만들면 family.js가 소급 태그해 카드로 넘어간다).
+// (2026-09-14: 회사 업무에 공유를 켜자 오늘 목록·배너에서 사라져 캘린더에만 남던 결함)
+export function isPersonalTask(t, myId) {
+  if (!t.familyId) return true;
+  if (isFamilyProject(t.project)) return false;
+  return !!myId && t.userId === myId;
 }
 
 // 가족 업무인데 내가 만든 게 아니면 작성자 이름. 목록에 없으면(나간 사람) "가족".

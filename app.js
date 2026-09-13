@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
-import { iso, isValidFamilyCode, rpcErrorMessage } from './lib.js';
+import { iso, isValidFamilyCode, rpcErrorMessage, isPersonalTask } from './lib.js';
 import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf, openReactionsFor, closeReactionsDialog, refreshOpenDialogs, updateLunarPreview } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { toggleReaction } from './reactions.js';
@@ -79,7 +79,7 @@ async function pushOverdueToTomorrow() {
   const tdIso = td.toISOString().slice(0, 10);
   const t2 = new Date(td); t2.setDate(td.getDate() + 1);
   const tomorrowIso = t2.toISOString().slice(0, 10);
-  const targets = state.tasks.filter(t => !t.done && !t.familyId && (t.endDate || t.date) <= tdIso).map(t => t.id);
+  const targets = state.tasks.filter(t => !t.done && isPersonalTask(t, state.user?.id) && (t.endDate || t.date) <= tdIso).map(t => t.id);
   if (!targets.length) return;
   if (!confirm(`오늘 못 한 일 ${targets.length}건을 내일(${tomorrowIso})로 옮길까요?`)) return;
   const { error } = await sb.from('work_tasks').update({ task_date: tomorrowIso, updated_at: new Date().toISOString() }).in('id', targets);

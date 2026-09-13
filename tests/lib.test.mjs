@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   iso, parseIso, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd, isTodayTask,
+  dueState, shiftEndDate, fmtMd, isPersonalTask,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage
 } from '../lib.js';
 
@@ -215,24 +215,30 @@ test('rpcErrorMessage', () => {
   assert.equal(rpcErrorMessage(null), '요청을 처리하지 못했습니다.');
 });
 
-// "오늘 해야 할 일" 목록 기준 (2026-09-14, 마감 임박 배너엔 2건인데 목록엔 1건만 뜨던 결함):
-// 오늘이 기간 안이거나, 미완료인데 마감이 오늘+3일 안(지난 것 포함)이면 오늘 목록에 둔다.
-test('isTodayTask: 오늘이 기간 안이면 완료 여부와 무관하게 true', () => {
-  assert.equal(isTodayTask({ date: '2026-09-13', endDate: '2026-09-14', done: false }, '2026-09-14'), true);
-  assert.equal(isTodayTask({ date: '2026-09-14', done: true }, '2026-09-14'), true);
+// "내 업무" 판정 (2026-09-14, 회사 업무에 "가족과 공유"를 켜자 오늘 목록·배너·카운트에서 사라진 결함):
+// 공유는 캘린더에서 같이 보이게 하는 것뿐이고, 내 업무는 그대로 내 프로세스를 탄다.
+// 가족 프로젝트 건과 가족이 만든 공유 건만 내 목록에서 뺀다.
+test('isPersonalTask: 공유 안 한 내 업무 → true', () => {
+  assert.equal(isPersonalTask({ project: '회사 업무', familyId: null, userId: 'me' }, 'me'), true);
 });
 
-test('isTodayTask: 내일 시작·3일 내 마감인 미완료는 true (배너와 같은 기준)', () => {
-  assert.equal(isTodayTask({ date: '2026-09-15', endDate: '2026-09-16', done: false }, '2026-09-14'), true);
-  assert.equal(isTodayTask({ date: '2026-09-17', done: false }, '2026-09-14'), true);   // 정확히 +3
+test('isPersonalTask: 회사 업무에 가족과 공유를 켜도 내가 만든 거면 true', () => {
+  assert.equal(isPersonalTask({ project: '회사 업무', familyId: 'fam1', userId: 'me' }, 'me'), true);
 });
 
-test('isTodayTask: 마감 지난 미완료는 true, 완료된 건 false', () => {
-  assert.equal(isTodayTask({ date: '2026-09-10', done: false }, '2026-09-14'), true);
-  assert.equal(isTodayTask({ date: '2026-09-10', done: true }, '2026-09-14'), false);
+test('isPersonalTask: 가족이 만든 공유 업무는 false', () => {
+  assert.equal(isPersonalTask({ project: '회사 업무', familyId: 'fam1', userId: 'spouse' }, 'me'), false);
 });
 
-test('isTodayTask: 4일 뒤 마감·기간 밖이면 false', () => {
-  assert.equal(isTodayTask({ date: '2026-09-18', done: false }, '2026-09-14'), false);
-  assert.equal(isTodayTask({ date: '2026-09-15', endDate: '2026-09-16', done: true }, '2026-09-14'), false);
+test('isPersonalTask: 가족 일정 프로젝트는 누가 만들었든 false (가족 카드로 간다)', () => {
+  assert.equal(isPersonalTask({ project: '가족 일정', familyId: 'fam1', userId: 'me' }, 'me'), false);
+  assert.equal(isPersonalTask({ project: '가족일정', familyId: 'fam1', userId: 'spouse' }, 'me'), false);
+});
+
+test('isPersonalTask: 가족이 없는 사용자의 가족 일정 업무(familyId null)는 내 업무로 남는다', () => {
+  assert.equal(isPersonalTask({ project: '가족 일정', familyId: null, userId: 'me' }, 'me'), true);
+});
+
+test('isPersonalTask: 로그인 전(myId 없음)엔 공유 업무를 내 것으로 치지 않는다', () => {
+  assert.equal(isPersonalTask({ project: '회사 업무', familyId: 'fam1', userId: undefined }, undefined), false);
 });

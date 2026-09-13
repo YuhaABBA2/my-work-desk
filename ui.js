@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isTodayTask } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask } from './lib.js';
 import { REACTION_EMOJIS, summarizeReactions } from './reactions.js';
 import { holidayFor, lunarFor } from './holidays.js';
 import { today, state, settings } from './state.js';
@@ -62,15 +62,16 @@ export function render() {
   const td = iso(today);
   const until = iso(addDays(today, 7));
   const shown = visibleTasks();
-  // "오늘 해야 할 일", "이번 주 마감", 상단 카운트, 마감 임박 배너는 개인 업무만.
-  // 가족 공유 업무는 아래 "가족 일정" 카드에서 별도로 본다.
-  const personal = state.tasks.filter(t => !t.familyId);
+  // "오늘 해야 할 일", "이번 주 마감", 상단 카운트, 마감 임박 배너는 내 업무만 (isPersonalTask).
+  // "가족과 공유"를 켠 내 업무도 여기 남는다 — 공유는 캘린더 표시일 뿐. 가족 일정 프로젝트는 아래 "가족 일정" 카드로.
+  const myId = state.user?.id;
+  const personal = state.tasks.filter(t => isPersonalTask(t, myId));
   const personalOpen = personal.filter(t => !t.done);
   const personalDone = personal.filter(t => t.done);
   $('#openCount').textContent = personalOpen.length;
   $('#doneCount').textContent = personalDone.length;
-  const personalShown = shown.filter(t => !t.familyId);
-  $('#todayTasks').innerHTML = personalShown.filter(t => isTodayTask(t, td)).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">오늘 등록된 업무가 없습니다.</div>';
+  const personalShown = shown.filter(t => isPersonalTask(t, myId));
+  $('#todayTasks').innerHTML = personalShown.filter(t => spansDay(t, td)).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">오늘 등록된 업무가 없습니다.</div>';
   $('#weekTasks').innerHTML = personalShown.filter(t => !t.done && dueDate(t) >= td && dueDate(t) <= until).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">이번주 업무일정이 없습니다.</div>';
   const dueSoon = personalOpen.filter(t => dueDate(t) <= iso(addDays(today, 3))).sort(sortTasks);
   const alerts = [];
