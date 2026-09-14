@@ -1,6 +1,6 @@
 import { $ } from './ui.js';
 import { state } from './state.js';
-import { esc, searchNotes, noteLinks, noteBacklinks, renderNoteBody, normTitle, fmtMdDow } from './lib.js';
+import { iso, esc, searchNotes, noteLinks, noteBacklinks, renderNoteBody, normTitle, fmtMdDow } from './lib.js';
 import { deleteNote, findNoteByTitle } from './notes.js';
 
 export function setNoteStatus(msg) { const el = $('#noteStatus'); if (el) el.textContent = msg || ''; }
@@ -9,7 +9,7 @@ function titleSet() { return new Set(state.notes.map(n => normTitle(n.title))); 
 
 function noteItemHTML(n) {
   const first = String(n.body || '').split('\n').find(l => l.trim()) || '';
-  const when = n.updated_at ? fmtMdDow(n.updated_at.slice(0, 10)) : '';
+  const when = n.updated_at ? fmtMdDow(iso(new Date(n.updated_at))) : ''; // UTC 문자열을 그대로 자르면 KST 새벽 수정분이 전날로 찍힌다
   return `<button type="button" class="note-item" data-action="open-note-id" data-id="${esc(n.id)}"><b>${esc(n.title)}</b><span>${esc(first) || '(본문 없음)'}${when ? ` · ${when}` : ''}</span></button>`;
 }
 
