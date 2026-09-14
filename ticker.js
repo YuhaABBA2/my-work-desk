@@ -60,8 +60,8 @@ function visible() {
 
 export function startTicker() {
   stopTicker();
+  renderTiles(); // 탭이 뒤에 있어도 골격은 그려 둔다 — 앞으로 오면 visibilitychange 가 채운다
   if (!visible()) return;
-  renderTiles();
   refresh();
   timer = setInterval(refresh, INTERVAL_MS);
 }
