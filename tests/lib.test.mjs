@@ -5,7 +5,8 @@ import {
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
   dueState, shiftEndDate, fmtMd, isPersonalTask,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
-  normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle
+  normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
+  mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow
 } from '../lib.js';
 
 test('parseIso → iso 왕복', () => {
@@ -275,4 +276,44 @@ test('isValidNoteTitle: 1~100자, 대괄호 금지', () => {
   assert.equal(isValidNoteTitle('[[a'), false);
   assert.equal(isValidNoteTitle('note[1]'), false);
   assert.equal(isValidNoteTitle('x'.repeat(101)), false);
+});
+
+// ---- 아이디어 노트: @ 멘션 ----
+test('mentionQuery: 줄 시작·공백 뒤 @만 트리거, 커서 앞 검색어를 준다', () => {
+  assert.deepEqual(mentionQuery('@여신', 3), { start: 0, query: '여신' });
+  assert.deepEqual(mentionQuery('메모 @허브 노', 8), { start: 3, query: '허브 노' });
+  assert.equal(mentionQuery('a@b', 3), null);            // 이메일처럼 단어 중간
+  assert.equal(mentionQuery('@a\nb', 4), null);          // 줄바꿈 넘어감
+  assert.equal(mentionQuery('없음', 2), null);
+  assert.deepEqual(mentionQuery('@', 1), { start: 0, query: '' });
+});
+
+test('applyMention: @검색어를 [[제목]] 과 공백으로 치환하고 커서를 뒤로', () => {
+  assert.deepEqual(applyMention('메모 @허 끝', 3, 5, '허브'), { text: '메모 [[허브]]  끝', caret: 10 });
+  assert.deepEqual(applyMention('@', 0, 1, 'A'), { text: '[[A]] ', caret: 6 });
+});
+
+test('searchNotes: 제목·본문 부분일치(대소문자 무시), updated_at 내림차순, 빈 검색은 전부', () => {
+  const notes = [
+    { id: '1', title: 'Hub', body: '', updated_at: '2026-09-01T00:00:00Z' },
+    { id: '2', title: '여신', body: '회전일 hub 메모', updated_at: '2026-09-03T00:00:00Z' },
+    { id: '3', title: '가족', body: '', updated_at: '2026-09-02T00:00:00Z' }
+  ];
+  assert.deepEqual(searchNotes(notes, 'hub').map(n => n.id), ['2', '1']);
+  assert.deepEqual(searchNotes(notes, '  ').map(n => n.id), ['2', '3', '1']);
+  assert.deepEqual(searchNotes(notes, '없음'), []);
+});
+
+test('renderNoteBody: 링크는 버튼, 끊긴 링크는 회색 span, 나머지는 esc + <br>', () => {
+  const titles = new Set(['허브']);
+  assert.equal(
+    renderNoteBody('a<b [[허브]]\n[[없음]]', titles),
+    'a&lt;b <button type="button" class="note-link" data-action="open-note" data-title="허브">허브</button><br><span class="note-link broken">없음</span>'
+  );
+  assert.equal(renderNoteBody('', titles), '');
+});
+
+test('fmtMdDow: 월/일(요일)', () => {
+  assert.equal(fmtMdDow('2026-09-14'), '9/14(월)');
+  assert.equal(fmtMdDow('2026-09-13'), '9/13(일)');
 });
