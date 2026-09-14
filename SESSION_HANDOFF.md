@@ -53,12 +53,13 @@
 - 제목 바꾸면 `notes.js saveNote`가 백링크 본문의 `[[옛제목]]`을 함께 치환. 삭제하면 남은 링크는 회색 취소선(끊긴 링크).
 - 편집은 textarea. `@`(줄 시작·공백 뒤)로 제목 검색 → 선택하면 `[[제목]] ` 삽입. 없는 제목이면 "새 노트 만들기".
 - 화면: 대시보드 카드(최근 5장·검색, `notes-ui.js`) → `noteDialog` 읽기/편집. 링크 타고 들어간 만큼 `state.noteStack`, ← 뒤로.
+- **기본 숨김.** 프로필 → 설정 → "아이디어 노트 보기"로 계정별 켬(`work_settings.show_notes`). 꺼져 있으면 카드도 없고 `loadNotes()`도 안 부른다. 끄기는 숨김일 뿐 노트는 남는다. 배포 후 기존 사용자도 한 번 켜야 한다. 스펙 `docs/superpowers/specs/2026-09-14-notes-opt-in-design.md`.
 - 가족 공유·태그·노트→업무 전환은 안 만듦. 스펙 `docs/superpowers/specs/2026-09-14-idea-notes-design.md`, 계획 `docs/superpowers/plans/2026-09-14-idea-notes.md`.
 
-### 시세·투자 패널 (관리자 전용)
+### 시세·투자 패널 (계정 설정)
 
 - `work_settings.show_market` 계정별 설정. 기본 꺼짐.
-- 툴바 토글 표시 조건: 가족이 없거나 가족의 가장. 구성원에겐 토글·패널 모두 없음.
+- 프로필 → 설정 → "시세·투자 패널 보기". 2026-09-14부터 가족 가장 여부와 무관하게 모든 계정이 켤 수 있다. (헤더 토글 버튼은 9/13에 없어졌는데 `applyMarketVisibility`가 계속 참조해 TypeError → `loadMarket` 미실행 결함이 있었다. 같은 날 해소.)
 - 축산물 시세 카드:
   - **양돈** = `pig_price` 실데이터. 등외제외, 헤드라인 + 14일 스파크라인 + 전일/전주/전년 대비.
   - 한우 / 산란 / 육계 = 축산유통정보 다봄 링크(fallback). 실데이터는 다음 스펙.
@@ -85,7 +86,7 @@
 - `tasks.js`: `work_tasks` CRUD, 반복, 시리즈 분기
 - `projects.js`: `work_projects` CRUD, 이관, 고정 프로젝트
 - `family.js`: 가족 CRUD, `loadFamily` 소급 태그
-- `settings.js`: `work_settings` (show_market)
+- `settings.js`: `work_settings` (show_market, show_notes)
 - `market.js`: 시세 카드(`pig_price` 실데이터) + 투자 링크
 - `notify.js`: 푸시 구독/해제, VAPID 공개키
 - `sw.js`: 서비스워커 (push/notificationclick)
