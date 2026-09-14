@@ -277,3 +277,58 @@ export function fmtMdDow(isoStr) {
 export function filterPigSeries(rows, minHead = 300) {
   return (rows || []).filter(r => r.head_count == null || r.head_count >= minHead);
 }
+
+// ── 투자 지표 관심 목록 ─────────────────────────────────────────────
+export const DEFAULT_WATCHLIST = Object.freeze([
+  { symbol: '^KS11', name: '코스피' },
+  { symbol: '^KQ11', name: '코스닥' },
+  { symbol: '^SOX', name: '필라델피아 반도체' },
+  { symbol: '^VIX', name: 'VIX' },
+  { symbol: '^GSPC', name: 'S&P 500' },
+  { symbol: 'KRW=X', name: '달러/원' },
+  { symbol: 'JPY=X', name: '달러/엔' },
+].map(Object.freeze));
+export const WATCHLIST_MAX = 20;
+
+// 등락. prevClose 가 없거나 0이면 비교 불가 → null.
+export function indexDelta(price, prevClose) {
+  if (!Number.isFinite(price) || !Number.isFinite(prevClose) || prevClose <= 0) return null;
+  const diff = Math.round((price - prevClose) * 100) / 100;
+  const pct = Math.round(((price - prevClose) / prevClose) * 10000) / 100;
+  return { diff, pct, cls: diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat' };
+}
+
+// 값 표시. 한국 주식(.KS/.KQ)은 원 단위 정수, 나머지(지수·환율)는 소수 2자리.
+export function fmtIndex(v, symbol) {
+  if (!Number.isFinite(v)) return '-';
+  const krStock = /\.(KS|KQ)$/i.test(String(symbol || ''));
+  const digits = krStock ? 0 : 2;
+  return v.toLocaleString('ko-KR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+// KRX 목록([이름, 코드, 'KS'|'KQ']) 검색. 이름 부분일치(대소문자 무시) 우선, 코드 전방일치 다음.
+export function krxSearch(list, q, limit = 8) {
+  const k = String(q || '').trim().toLowerCase();
+  if (!k) return [];
+  const byName = [], byCode = [];
+  for (const [name, code, mkt] of list || []) {
+    if (name.toLowerCase().includes(k)) byName.push({ symbol: `${code}.${mkt}`, name });
+    else if (code.toLowerCase().startsWith(k)) byCode.push({ symbol: `${code}.${mkt}`, name });
+    if (byName.length >= limit) break;
+  }
+  return byName.concat(byCode).slice(0, limit);
+}
+
+// work_settings.market_symbols 저장값 → 안전한 목록. 이상하면 기본 목록.
+export function normalizeWatchlist(v) {
+  if (!Array.isArray(v)) return DEFAULT_WATCHLIST;
+  const seen = new Set(), out = [];
+  for (const it of v) {
+    const symbol = typeof it?.symbol === 'string' ? it.symbol.trim() : '';
+    if (!symbol || seen.has(symbol)) continue;
+    seen.add(symbol);
+    out.push({ symbol, name: typeof it.name === 'string' && it.name.trim() ? it.name.trim() : symbol });
+    if (out.length >= WATCHLIST_MAX) break;
+  }
+  return out.length ? out : DEFAULT_WATCHLIST;
+}

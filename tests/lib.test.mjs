@@ -7,7 +7,8 @@ import {
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
-  filterPigSeries
+  filterPigSeries,
+  indexDelta, fmtIndex, krxSearch, normalizeWatchlist, DEFAULT_WATCHLIST
 } from '../lib.js';
 
 test('parseIso → iso 왕복', () => {
@@ -330,4 +331,44 @@ test('filterPigSeries: 표본 300두 미만 경매일은 제외, 두수 미상�
   assert.deepEqual(filterPigSeries(rows).map(r => r.price_date), ['2026-09-11', '2026-09-13', '2026-09-14']);
   assert.deepEqual(filterPigSeries(rows, 2500).map(r => r.price_date), ['2026-09-13']); // null은 임계값과 무관하게 유지
   assert.deepEqual(filterPigSeries([]), []);
+});
+
+test('indexDelta: 등락·등락률·방향, 전일 없으면 null', () => {
+  assert.deepEqual(indexDelta(6684.37, 6909.91), { diff: -225.54, pct: -3.26, cls: 'down' });
+  assert.deepEqual(indexDelta(17.1, 15.84), { diff: 1.26, pct: 7.95, cls: 'up' });
+  assert.deepEqual(indexDelta(100, 100), { diff: 0, pct: 0, cls: 'flat' });
+  assert.equal(indexDelta(100, null), null);
+  assert.equal(indexDelta(100, 0), null);
+});
+
+test('fmtIndex: 소수 2자리 천단위, 한국 주식(.KS/.KQ)은 정수', () => {
+  assert.equal(fmtIndex(6684.37, '^KS11'), '6,684.37');
+  assert.equal(fmtIndex(1345.9, 'KRW=X'), '1,345.90');
+  assert.equal(fmtIndex(17.1, '^VIX'), '17.10');
+  assert.equal(fmtIndex(249000, '005930.KS'), '249,000');
+  assert.equal(fmtIndex(12345.6, '035720.KQ'), '12,346');
+  assert.equal(fmtIndex(null, '^KS11'), '-');
+});
+
+test('krxSearch: 이름 부분일치(대소문자 무시)·코드 전방일치, 이름 일치 우선, 심볼 접미사', () => {
+  const list = [['삼성전자', '005930', 'KS'], ['삼성전자우', '005935', 'KS'], ['SK하이닉스', '000660', 'KS'], ['에코프로', '086520', 'KQ'], ['우성', '006980', 'KS']];
+  assert.deepEqual(krxSearch(list, '삼성전자'), [{ symbol: '005930.KS', name: '삼성전자' }, { symbol: '005935.KS', name: '삼성전자우' }]);
+  assert.deepEqual(krxSearch(list, 'sk하이'), [{ symbol: '000660.KS', name: 'SK하이닉스' }]);
+  assert.deepEqual(krxSearch(list, '0865'), [{ symbol: '086520.KQ', name: '에코프로' }]);
+  assert.deepEqual(krxSearch(list, '  '), []);
+  assert.equal(krxSearch(list, '성', 1).length, 1);
+});
+
+test('normalizeWatchlist: 저장값 검증·중복 제거·20개 절단·빈 값은 기본', () => {
+  assert.deepEqual(normalizeWatchlist(null), DEFAULT_WATCHLIST);
+  assert.deepEqual(normalizeWatchlist([]), DEFAULT_WATCHLIST);
+  assert.deepEqual(normalizeWatchlist('x'), DEFAULT_WATCHLIST);
+  assert.deepEqual(
+    normalizeWatchlist([{ symbol: 'NVDA', name: 'NVIDIA' }, { symbol: 'NVDA', name: '중복' }, { symbol: 5 }, { name: '심볼없음' }, { symbol: '^VIX' }]),
+    [{ symbol: 'NVDA', name: 'NVIDIA' }, { symbol: '^VIX', name: '^VIX' }]
+  );
+  const many = Array.from({ length: 25 }, (_, i) => ({ symbol: 'S' + i, name: 'n' + i }));
+  assert.equal(normalizeWatchlist(many).length, 20);
+  assert.equal(DEFAULT_WATCHLIST.length, 7);
+  assert.equal(DEFAULT_WATCHLIST[0].name, '코스피');
 });

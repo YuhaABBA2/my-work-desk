@@ -8,6 +8,7 @@ import { initHolidays } from './holidays.js';
 initHolidays();
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
+import { startTicker, stopTicker, openWatchDialog, closeWatchDialog, onWatchQueryInput, onWatchDialogClick, onWatchReset } from './ticker.js';
 import { pushSupported, getPushState, enablePush, disablePush } from './notify.js';
 import { loadFamily, createFamily, joinFamily, leaveFamily, regenerateCode, renameMe, defaultDisplayName } from './family.js';
 import { loadSettings, setShowMarket, setShowNotes } from './settings.js';
@@ -144,7 +145,7 @@ async function start() {
   if (state.settings.showNotes) await refreshNotes();
   applyMarketVisibility();
   syncShareFamilyForProject();
-  if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); }
+  if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); startTicker(); }
 }
 
 
@@ -191,7 +192,7 @@ $('#setMarket').addEventListener('change', async e => {
   const err = await setShowMarket(e.target.checked);
   if (err) { alert(err.message || '설정을 저장하지 못했습니다.'); e.target.checked = !e.target.checked; return; }
   applyMarketVisibility();
-  if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); }
+  if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); startTicker(); } else stopTicker();
 });
 $('#setNotes').addEventListener('change', async e => {
   const err = await setShowNotes(e.target.checked);
@@ -407,3 +408,9 @@ $('#noteMention').addEventListener('click', onMentionClick);
 
 sb.auth.onAuthStateChange((_event, session) => { if (session && !state.user) start(); });
 start();
+// 투자 지표 관심 목록 편집
+$('#watchEditBtn').onclick = openWatchDialog;
+$('#watchClose').onclick = closeWatchDialog;
+$('#watchReset').onclick = onWatchReset;
+$('#watchQuery').addEventListener('input', onWatchQueryInput);
+$('#watchDialog').addEventListener('click', onWatchDialogClick);
