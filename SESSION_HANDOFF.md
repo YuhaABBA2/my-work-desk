@@ -62,8 +62,13 @@
 - 프로필 → 설정 → "시세·투자 패널 보기". 2026-09-14부터 가족 가장 여부와 무관하게 모든 계정이 켤 수 있다. (헤더 토글 버튼은 9/13에 없어졌는데 `applyMarketVisibility`가 계속 참조해 TypeError → `loadMarket` 미실행 결함이 있었다. 같은 날 해소.)
 - 축산물 시세 카드:
   - **양돈** = `pig_price` 실데이터. 등외제외, 헤드라인 + 14일 스파크라인 + 전일/전주/전년 대비.
+  - **300두 미만 경매일은 표시에서 제외**(`lib.js filterPigSeries`, 토요일 30두 평균이 5,365로 찍히던 것). 당일 값은 pig-farm-log GH Actions `pig-price-evening.yml`(월~토 20:00 KST, `?today=1`)이 넣고 다음날 11:00 Vercel 크론이 확정치로 덮는다. 스펙 `docs/superpowers/specs/2026-09-15-pig-price-same-day-design.md`.
   - 한우 / 산란 / 육계 = 축산유통정보 다봄 링크(fallback). 실데이터는 다음 스펙.
-- 투자 지표 카드: 공식 조회 페이지 링크 허브.
+- 투자 지표 카드: 맨 위에 **실시간 타일**(`ticker.js`) + 아래 공식 조회 페이지 링크 허브.
+  - 시세는 pig-farm-log 공개 프록시 `https://masan-farm.vercel.app/api/market/quotes?symbols=…`(Yahoo 차트 API, 60초 캐시, 데스크 origin만 CORS). 카드·탭이 보일 때만 60초 타이머, 숨겨지면 정지.
+  - 관심 목록은 계정별 `work_settings.market_symbols jsonb` (`null`=기본 7종: 코스피·코스닥·SOX·VIX·S&P500·달러/원·달러/엔). "편집"에서 추가/삭제, 최대 20개.
+  - 검색: 한글·숫자 → 앱 안의 `krx-list.json`(KIND 상장목록 2,686종목, 회사 단위라 우선주 없음; 갱신은 `python scripts/build-krx-list.py`), 영문 → `/api/market/search` (Yahoo). 한국 주식(.KS/.KQ)은 정수, 나머지 소수 2자리.
+  - Yahoo는 비공식 — 형식이 바뀌면 타일이 "조회 실패". pig-farm-log `app/api/market/quotes/route.ts` 한 곳 수정. 스펙 `docs/superpowers/specs/2026-09-15-market-watchlist-design.md`.
 
 ### 푸시 알림 (구독은 라이브, 발송은 CRON_SECRET 등록 후)
 
@@ -86,8 +91,9 @@
 - `tasks.js`: `work_tasks` CRUD, 반복, 시리즈 분기
 - `projects.js`: `work_projects` CRUD, 이관, 고정 프로젝트
 - `family.js`: 가족 CRUD, `loadFamily` 소급 태그
-- `settings.js`: `work_settings` (show_market, show_notes)
-- `market.js`: 시세 카드(`pig_price` 실데이터) + 투자 링크
+- `settings.js`: `work_settings` (show_market, show_notes, market_symbols)
+- `market.js`: 시세 카드(`pig_price` 실데이터) + 투자 링크 + `sparkline()` 공용
+- `ticker.js`: 투자 지표 실시간 타일·관심 목록 편집 (pig-farm-log `/api/market/*`)
 - `notify.js`: 푸시 구독/해제, VAPID 공개키
 - `sw.js`: 서비스워커 (push/notificationclick)
 - `styles.css`: 초록/카키/연두 팔레트 (`--blue`=`#2f7a3d`), 다크모드, dialog·FAB·spark-svg
