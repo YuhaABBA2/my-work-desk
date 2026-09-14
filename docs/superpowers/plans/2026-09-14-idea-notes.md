@@ -13,7 +13,7 @@
 - 브라우저는 publishable key만. service_role 키 절대 금지. 새 표 SQL은 `supabase-setup.sql`에 추가하고 **사용자가 Supabase 대시보드에서 실행**한다.
 - 새 표 이름은 `work_notes` 하나. 다른 표는 건드리지 않는다.
 - 가족 공유 없음(본인 전용). 태그 없음. 노트→업무 전환 없음.
-- 링크 문법은 `[[제목]]` 하나. 제목 비교는 대소문자 무시·앞뒤 공백 무시. 제목에 `]]` 금지.
+- 링크 문법은 `[[제목]]` 하나. 제목 비교는 대소문자 무시·앞뒤 공백 무시. 제목에 대괄호 `[` `]` 금지.
 - `@` 검색 트리거는 **줄 시작 또는 공백 뒤의 `@`** 만.
 - 편집은 `<textarea>`(`[[제목]]` 글자 그대로). 칩은 읽기 모드에서만.
 - 모든 사용자 노출 문구는 존댓말. HTML에 넣는 사용자 텍스트는 반드시 `esc()`.
@@ -50,7 +50,7 @@
   - `noteLinks(body: string): string[]` — `[[…]]` 안 제목(트림), 중복 제거(normTitle 기준), 순서 유지. 빈 `[[ ]]` 제외
   - `noteBacklinks(title: string, notes: {id,title,body}[]): note[]` — body에 `[[title]]`(normTitle 비교) 가진 노트. 자기 자신 제외
   - `renameNoteLinks(body: string, oldTitle: string, newTitle: string): string` — `[[old]]`(normTitle 비교) → `[[new]]`
-  - `isValidNoteTitle(title: string): boolean` — 트림 후 1~100자, `]]` 없음, `[[` 없음
+  - `isValidNoteTitle(title: string): boolean` — 트림 후 1~100자, 대괄호 없음
 
 - [ ] **Step 1: 테스트 추가** — `tests/lib.test.mjs` import 줄에 `normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle` 추가, 파일 끝에:
 

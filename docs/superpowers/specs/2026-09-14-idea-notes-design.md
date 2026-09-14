@@ -84,7 +84,7 @@ create unique index if not exists work_notes_user_title on public.work_notes (us
 | `searchNotes(notes, q)` | 제목·본문 부분일치(대소문자 무시), updated_at desc |
 | `renderNoteBody(body, titleSet)` | 본문 → HTML(칩/끊긴 링크/줄바꿈, esc 적용) |
 
-엣지케이스: 빈 본문 · `[[ ]]` 빈 링크 · 자기 자신 링크 · 같은 노트 두 번 링크 · 제목에 `]]` 포함(허용 안 함: 저장 시 거부) ·
+엣지케이스: 빈 본문 · `[[ ]]` 빈 링크 · 자기 자신 링크 · 같은 노트 두 번 링크 · 제목에 대괄호 포함(허용 안 함: 저장 시 거부) ·
 `@`가 이메일처럼 단어 중간에 있을 때(앞 글자가 공백/줄 시작일 때만 트리거).
 
 ## 파일

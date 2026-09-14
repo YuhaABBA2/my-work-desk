@@ -224,5 +224,6 @@ export function renameNoteLinks(body, oldTitle, newTitle) {
 
 export function isValidNoteTitle(title) {
   const t = String(title || '').trim();
-  return t.length >= 1 && t.length <= 100 && !t.includes(']]') && !t.includes('[[');
+  // 대괄호는 링크 문법과 충돌 — 하나만 있어도 [[제목]]으로 못 가리킨다
+  return t.length >= 1 && t.length <= 100 && !/[\[\]]/.test(t);
 }

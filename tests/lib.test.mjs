@@ -268,10 +268,11 @@ test('renameNoteLinks: 대소문자 무시로 치환, 다른 링크는 그대로
   assert.equal(renameNoteLinks('', 'a', 'b'), '');
 });
 
-test('isValidNoteTitle: 1~100자, [[ ]] 금지', () => {
+test('isValidNoteTitle: 1~100자, 대괄호 금지', () => {
   assert.equal(isValidNoteTitle('여신 아이디어'), true);
   assert.equal(isValidNoteTitle('   '), false);
   assert.equal(isValidNoteTitle('a]]b'), false);
   assert.equal(isValidNoteTitle('[[a'), false);
+  assert.equal(isValidNoteTitle('note[1]'), false);
   assert.equal(isValidNoteTitle('x'.repeat(101)), false);
 });
