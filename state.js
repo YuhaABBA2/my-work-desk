@@ -15,7 +15,10 @@ export const state = {
   weekStart: null,  // 주간 뷰에서 보여지는 주의 일요일(Date). 최초 렌더에서 초기화
   reactions: {},    // { [taskId]: [{userId, emoji}] }
   openProject: null, // 프로젝트 상세 다이얼로그가 열려 있는 프로젝트명
-  holidays: {}      // { [iso]: '공휴일 이름' } — holidays.js 가 채운다
+  holidays: {},     // { [iso]: '공휴일 이름' } — holidays.js 가 채운다
+  notes: [],        // 아이디어 노트 { id, title, body, updated_at } — notes.js 가 채운다
+  notesReady: false,
+  noteStack: []     // 노트 뷰에서 링크 타고 들어간 노트 id 스택 (← 뒤로)
 };
 
 // 기기별 취향은 localStorage 유지
