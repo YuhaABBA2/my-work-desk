@@ -70,7 +70,8 @@ test('noteBacklinks: 나를 가리키는 노트만, 자기 자신은 제외', ()
   ];
   assert.deepEqual(noteBacklinks('a', notes).map(n => n.id), ['1']);
   assert.deepEqual(noteBacklinks('허브', notes).map(n => n.id), ['2']);
-  assert.deepEqual(noteBacklinks('B', notes), []);
+  assert.deepEqual(noteBacklinks('B', notes).map(n => n.id), ['1']);
+  assert.deepEqual(noteBacklinks('없음', notes), []);
 });
 
 test('renameNoteLinks: 대소문자 무시로 치환, 다른 링크는 그대로', () => {
