@@ -6,7 +6,8 @@ import {
   dueState, shiftEndDate, fmtMd, isPersonalTask,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
-  mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow
+  mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
+  filterPigSeries
 } from '../lib.js';
 
 test('parseIso → iso 왕복', () => {
@@ -316,4 +317,17 @@ test('renderNoteBody: 링크는 버튼, 끊긴 링크는 회색 span, 나머지�
 test('fmtMdDow: 월/일(요일)', () => {
   assert.equal(fmtMdDow('2026-09-14'), '9/14(월)');
   assert.equal(fmtMdDow('2026-09-13'), '9/13(일)');
+});
+
+test('filterPigSeries: 표본 300두 미만 경매일은 제외, 두수 미상은 유지', () => {
+  const rows = [
+    { price_date: '2026-09-11', price_per_kg: 7499, head_count: 2003 },
+    { price_date: '2026-09-12', price_per_kg: 5365, head_count: 30 },
+    { price_date: '2026-09-13', price_per_kg: 7000, head_count: null },
+    { price_date: '2026-09-14', price_per_kg: 7947, head_count: 300 },
+    { price_date: '2026-09-15', price_per_kg: 7900, head_count: 299 },
+  ];
+  assert.deepEqual(filterPigSeries(rows).map(r => r.price_date), ['2026-09-11', '2026-09-13', '2026-09-14']);
+  assert.deepEqual(filterPigSeries(rows, 2500).map(r => r.price_date), ['2026-09-13']); // null은 임계값과 무관하게 유지
+  assert.deepEqual(filterPigSeries([]), []);
 });

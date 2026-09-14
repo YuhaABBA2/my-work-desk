@@ -1,4 +1,4 @@
-import { esc } from './lib.js';
+import { esc, filterPigSeries } from './lib.js';
 import { $ } from './ui.js';
 
 const INVESTMENT_SOURCES = [
@@ -102,12 +102,12 @@ export async function loadMarket() {
     // 1년치 조금 넘게 — 전년 대비 계산 여유.
     const yearAgo = new Date(Date.now() - 380 * 86400000).toISOString().slice(0, 10);
     const { data, error } = await sb.from('pig_price')
-      .select('price_date,price_per_kg')
+      .select('price_date,price_per_kg,head_count')
       .eq('grade', 'excl_utility')
       .gte('price_date', yearAgo)
       .order('price_date', { ascending: true });
     if (error) throw error;
-    const pig = pigCard(data || []);
+    const pig = pigCard(filterPigSeries(data || []));
     status.innerHTML = pig.status;
     grid.innerHTML = [pig.html, linkCard('한우', 'https://www.ekapepia.com/v3/price/livestock/cow/producer.do', '축산유통정보 다봄'),
       linkCard('산란', 'https://www.ekapepia.com/supPrice/liveStock/distrPrice/sanji/hen.do', '양계협회 산지시세'),
@@ -166,7 +166,7 @@ function pigCard(prices) {
   const wkAgo = priceOnOrBefore(prices, shift(latest.price_date, -7));
   const yrAgo = priceOnOrBefore(prices, shift(latest.price_date, -365));
   return {
-    status: `돼지 도매(등외제외) ${latest.price_date} 기준 · 축산물품질평가원`,
+    status: `돼지 도매(등외제외) ${latest.price_date} 기준 · 축산물품질평가원 · 300두 미만 경매일 제외`,
     html: `<div class="market-item wide-item"><div class="mi-head"><b>양돈</b><span class="mi-unit">등외제외 · 원/kg</span></div>
       <div class="mi-hero">${won(latest.price_per_kg)}</div>
       ${sparklineSVG(spark)}
