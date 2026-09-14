@@ -78,10 +78,13 @@ create table if not exists public.work_settings (
   user_id uuid primary key references auth.users(id) on delete cascade,
   show_market boolean not null default false,
   show_notes boolean not null default false,
+  market_symbols jsonb,
   updated_at timestamptz not null default now()
 );
 -- 2026-09-14: 아이디어 노트 켜기/끄기 (기존 설치용)
 alter table public.work_settings add column if not exists show_notes boolean not null default false;
+-- 2026-09-15: 투자 지표 관심 목록 (null = 기본 7종)
+alter table public.work_settings add column if not exists market_symbols jsonb;
 
 alter table public.work_tasks add column if not exists family_id uuid references public.families(id) on delete set null;
 create index if not exists work_tasks_family_idx on public.work_tasks(family_id);
