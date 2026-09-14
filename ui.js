@@ -151,16 +151,16 @@ export function renderFamily() {
     <p class="hint">이름 변경·초대 코드·가족 나가기는 프로필 → 설정에서.</p>`;
 }
 
-// 시세·투자 패널은 계정 설정으로, 토글 버튼은 관리자(또는 가족 없음)에게만.
+// 시세·투자 패널: 계정 설정 하나로 결정. (가장 전용 가드와 헤더 토글 버튼은 2026-09-14에 제거)
 export function applyMarketVisibility() {
-  // 구성원(관리자 아님)에게는 설정과 무관하게 패널·토글 모두 숨긴다.
-  const canSee = !state.family || state.family.isAdmin;
-  const on = canSee && !!state.settings.showMarket;
+  const on = !!state.settings.showMarket;
   $('.market-card').hidden = !on;
   $('.investment-card').hidden = !on;
-  const btn = $('#toggleMarket');
-  btn.hidden = !canSee;
-  btn.textContent = on ? '시세·투자 숨기기' : '시세·투자 보기';
+}
+
+// 아이디어 노트 카드: 계정 설정 하나로 결정. 기본 꺼짐.
+export function applyNotesVisibility() {
+  $('#notesCard').hidden = !state.settings.showNotes;
 }
 
 export function renderProjects() {
@@ -544,8 +544,7 @@ export function openSettingsDialog() {
   $('#setHideDone').checked = !!settings.hideDone;
   $('#setDark').checked = !!settings.dark;
   $('#setMarket').checked = !!state.settings.showMarket;
-  const canSeeMarket = !state.family || state.family.isAdmin;
-  $('#setMarketRow').hidden = !canSeeMarket;
+  $('#setNotes').checked = !!state.settings.showNotes;
   // 가족 섹션: 가족이 있으면 노출. 이름 항상, 초대는 가장만, 나가기는 구성원만.
   const famSection = $('#familySection');
   if (famSection) {

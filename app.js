@@ -1,7 +1,7 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
 import { iso, isValidFamilyCode, rpcErrorMessage, isPersonalTask } from './lib.js';
-import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf, openReactionsFor, closeReactionsDialog, refreshOpenDialogs, updateLunarPreview } from './ui.js';
+import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, applyNotesVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf, openReactionsFor, closeReactionsDialog, refreshOpenDialogs, updateLunarPreview } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { toggleReaction } from './reactions.js';
 import { initHolidays } from './holidays.js';
@@ -10,7 +10,7 @@ import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFi
 import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
 import { pushSupported, getPushState, enablePush, disablePush } from './notify.js';
 import { loadFamily, createFamily, joinFamily, leaveFamily, regenerateCode, renameMe, defaultDisplayName } from './family.js';
-import { loadSettings, setShowMarket } from './settings.js';
+import { loadSettings, setShowMarket, setShowNotes } from './settings.js';
 import { loadNotes } from './notes.js';
 import { renderNotesCard, openNote, openNoteByTitle, goBackNote, closeNoteDialog, onDeleteCurrentNote, setNoteStatus, openNoteEditor, onNoteFormSubmit, cancelNoteEdit, onNoteBodyInput, onNoteBodyKeydown, onMentionClick, currentNoteId, hideMention } from './notes-ui.js';
 
@@ -53,7 +53,6 @@ async function handleFamilyAction(e) {
   if (err) return alert(rpcErrorMessage(err));
   await load();
   renderFamily();
-  applyMarketVisibility();
   syncShareFamilyForProject();
 }
 
@@ -69,7 +68,6 @@ async function onSettingsLeaveFamily() {
   if (err) return alert(rpcErrorMessage(err));
   await load();
   renderFamily();
-  applyMarketVisibility();
   syncShareFamilyForProject();
   closeSettingsDialog();
 }
@@ -109,6 +107,13 @@ function startVoiceInput() {
   try { rec.start(); } catch (_) { btn.classList.remove('listening'); }
 }
 
+// 노트 카드가 켜져 있을 때만 부른다. 꺼져 있으면 work_notes 조회 자체를 안 한다.
+async function refreshNotes() {
+  const err = await loadNotes();
+  setNoteStatus(err ? '노트를 불러오지 못했습니다. Supabase에 work_notes SQL을 적용했는지 확인해 주세요.' : '');
+  renderNotesCard();
+}
+
 let started = false;
 
 async function start() {
@@ -135,9 +140,8 @@ async function start() {
   if (fixErr) setProjectStatus('기본 프로젝트를 만들지 못했습니다. 새로고침 후 다시 시도해 주세요.');
   renderProjects();
   renderFamily();
-  const notesErr = await loadNotes();
-  setNoteStatus(notesErr ? '노트를 불러오지 못했습니다. Supabase에 work_notes SQL을 적용했는지 확인해 주세요.' : '');
-  renderNotesCard();
+  applyNotesVisibility();
+  if (state.settings.showNotes) await refreshNotes();
   applyMarketVisibility();
   syncShareFamilyForProject();
   if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); }
@@ -188,6 +192,13 @@ $('#setMarket').addEventListener('change', async e => {
   if (err) { alert(err.message || '설정을 저장하지 못했습니다.'); e.target.checked = !e.target.checked; return; }
   applyMarketVisibility();
   if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); }
+});
+$('#setNotes').addEventListener('change', async e => {
+  const err = await setShowNotes(e.target.checked);
+  if (err) { alert(err.message || '설정을 저장하지 못했습니다.'); e.target.checked = !e.target.checked; return; }
+  applyNotesVisibility();
+  if (state.settings.showNotes) await refreshNotes();
+  else closeNoteDialog();
 });
 $('#pushToggleBtn').onclick = async () => { await onNotifyToggle(); };
 // 가족 초대 코드 공유 / 재발급 — 설정 다이얼로그의 버튼
