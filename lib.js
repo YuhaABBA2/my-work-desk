@@ -194,3 +194,35 @@ export function rpcErrorMessage(err) {
   if (m.includes('ALREADY_MEMBER')) return '이미 가족에 속해 있습니다.';
   return m || '요청을 처리하지 못했습니다.';
 }
+
+// ---- 아이디어 노트 ----
+// 링크 문법은 본문 안의 [[제목]] 하나. 링크 표는 없고 노트 전체를 훑어 연결·백링크를 계산한다.
+const LINK_RE = /\[\[([^\[\]]+?)\]\]/g;
+
+export function normTitle(s) { return String(s || '').trim().toLowerCase(); }
+
+export function noteLinks(body) {
+  const out = [], seen = new Set();
+  for (const m of String(body || '').matchAll(LINK_RE)) {
+    const t = m[1].trim();
+    const k = normTitle(t);
+    if (!k || seen.has(k)) continue;
+    seen.add(k); out.push(t);
+  }
+  return out;
+}
+
+export function noteBacklinks(title, notes) {
+  const k = normTitle(title);
+  return (notes || []).filter(n => normTitle(n.title) !== k && noteLinks(n.body).some(l => normTitle(l) === k));
+}
+
+export function renameNoteLinks(body, oldTitle, newTitle) {
+  const k = normTitle(oldTitle);
+  return String(body || '').replace(LINK_RE, (m, t) => normTitle(t) === k ? `[[${newTitle}]]` : m);
+}
+
+export function isValidNoteTitle(title) {
+  const t = String(title || '').trim();
+  return t.length >= 1 && t.length <= 100 && !t.includes(']]') && !t.includes('[[');
+}

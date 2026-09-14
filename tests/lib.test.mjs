@@ -4,7 +4,8 @@ import {
   iso, parseIso, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
   dueState, shiftEndDate, fmtMd, isPersonalTask,
-  CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage
+  CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
+  normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle
 } from '../lib.js';
 
 test('parseIso → iso 왕복', () => {
@@ -241,4 +242,35 @@ test('isPersonalTask: 가족이 없는 사용자의 가족 일정 업무(familyI
 
 test('isPersonalTask: 로그인 전(myId 없음)엔 공유 업무를 내 것으로 치지 않는다', () => {
   assert.equal(isPersonalTask({ project: '회사 업무', familyId: 'fam1', userId: undefined }, undefined), false);
+});
+
+// ---- 아이디어 노트: 링크 ----
+test('noteLinks: [[제목]]을 순서대로, 중복(대소문자·공백 무시) 제거, 빈 링크 제외', () => {
+  assert.deepEqual(noteLinks('a [[여신 아이디어]] b [[ 여신 아이디어 ]] c [[Hub]] [[hub]] [[ ]] d'), ['여신 아이디어', 'Hub']);
+  assert.deepEqual(noteLinks(''), []);
+  assert.deepEqual(noteLinks(null), []);
+});
+
+test('noteBacklinks: 나를 가리키는 노트만, 자기 자신은 제외', () => {
+  const notes = [
+    { id: '1', title: '허브', body: '[[A]] [[b]]' },
+    { id: '2', title: 'A', body: '[[허브]] [[A]]' },
+    { id: '3', title: 'B', body: '없음' }
+  ];
+  assert.deepEqual(noteBacklinks('a', notes).map(n => n.id), ['1']);
+  assert.deepEqual(noteBacklinks('허브', notes).map(n => n.id), ['2']);
+  assert.deepEqual(noteBacklinks('B', notes), []);
+});
+
+test('renameNoteLinks: 대소문자 무시로 치환, 다른 링크는 그대로', () => {
+  assert.equal(renameNoteLinks('x [[old]] y [[OLD ]] z [[other]]', 'Old', 'New'), 'x [[New]] y [[New]] z [[other]]');
+  assert.equal(renameNoteLinks('', 'a', 'b'), '');
+});
+
+test('isValidNoteTitle: 1~100자, [[ ]] 금지', () => {
+  assert.equal(isValidNoteTitle('여신 아이디어'), true);
+  assert.equal(isValidNoteTitle('   '), false);
+  assert.equal(isValidNoteTitle('a]]b'), false);
+  assert.equal(isValidNoteTitle('[[a'), false);
+  assert.equal(isValidNoteTitle('x'.repeat(101)), false);
 });
