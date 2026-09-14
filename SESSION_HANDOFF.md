@@ -62,6 +62,7 @@
 - 프로필 → 설정 → "시세·투자 패널 보기". 2026-09-14부터 가족 가장 여부와 무관하게 모든 계정이 켤 수 있다. (헤더 토글 버튼은 9/13에 없어졌는데 `applyMarketVisibility`가 계속 참조해 TypeError → `loadMarket` 미실행 결함이 있었다. 같은 날 해소.)
 - 축산물 시세 카드:
   - **양돈** = `pig_price` 실데이터. 등외제외, 헤드라인 + 14일 스파크라인 + 전일/전주/전년 대비.
+  - **300두 미만 경매일은 표시에서 제외**(`lib.js filterPigSeries`, 토요일 30두 평균이 5,365로 찍히던 것). 당일 값은 pig-farm-log GH Actions `pig-price-evening.yml`(월~토 20:00 KST, `?today=1`)이 넣고 다음날 11:00 Vercel 크론이 확정치로 덮는다. 스펙 `docs/superpowers/specs/2026-09-15-pig-price-same-day-design.md`.
   - 한우 / 산란 / 육계 = 축산유통정보 다봄 링크(fallback). 실데이터는 다음 스펙.
 - 투자 지표 카드: 공식 조회 페이지 링크 허브.
 
