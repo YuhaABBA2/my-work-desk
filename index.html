@@ -82,6 +82,8 @@
           <div><h2>투자 지표 조회</h2><span class="hint">시장 체온 · 수급 · 공시 · 실적 · 거시 지표</span></div>
           <button id="openMarketDashboard" class="tool">KRX 열기</button>
         </div>
+        <div class="ticker-head"><span id="tickerStatus" class="hint">실시간 지표</span><button id="watchEditBtn" type="button" class="text-button">편집</button></div>
+        <div id="tickerGrid" class="ticker-grid"></div>
         <div class="stock-search">
           <input id="stockQuery" maxlength="80" placeholder="종목명, 종목코드, 지표 키워드">
           <button id="searchStock" class="primary">조회 링크 만들기</button>
@@ -173,6 +175,14 @@
       <div class="settings-section">
         <button id="logoutBtn" class="text-button">로그아웃</button>
       </div>
+    </div>
+  </dialog>
+  <dialog id="watchDialog" class="settings-dialog">
+    <div class="settings-body">
+      <div class="card-head"><div><h2>관심 지표 편집</h2><span class="hint">최대 20개. 한국 주식은 KRX 상장목록, 그 외는 Yahoo 검색.</span></div><button id="watchClose" type="button" class="text-button">닫기</button></div>
+      <div class="project-add"><input id="watchQuery" maxlength="40" autocomplete="off" placeholder="종목명·코드·영문 티커 (삼성전자, 005930, NVDA)"><button id="watchReset" type="button" class="tool" hidden>기본값으로</button></div>
+      <div id="watchResults" class="watch-results"></div>
+      <div id="watchList" class="watch-list"></div>
     </div>
   </dialog>
   <dialog id="noteDialog" class="note-dialog">

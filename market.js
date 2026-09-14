@@ -126,23 +126,23 @@ function linkCard(name, url, label) {
   return `<div class="market-item"><b>${esc(name)}</b><span><a class="source-link" href="${url}" target="_blank" rel="noreferrer">${esc(label)} ↗</a></span></div>`;
 }
 
-// 최근 N영업일 스파크라인 SVG (단일 계열, 축·범례 없음)
-function sparklineSVG(rows) {
-  if (!rows || rows.length < 2) return '';
+// 스파크라인 SVG (단일 계열, 축·범례 없음). 값 배열을 받는다 — 양돈 시세와 투자 지표 타일이 같이 쓴다.
+export function sparkline(vals, color = 'var(--blue)') {
+  if (!vals || vals.length < 2) return '';
   const W = 220, H = 40, PAD = 4;
-  const vals = rows.map(r => r.price_per_kg);
   const min = Math.min(...vals), max = Math.max(...vals);
   const span = max - min || 1;
-  const x = i => PAD + (i * (W - PAD * 2)) / (rows.length - 1);
+  const x = i => PAD + (i * (W - PAD * 2)) / (vals.length - 1);
   const y = v => PAD + (1 - (v - min) / span) * (H - PAD * 2);
-  const line = rows.map((r, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(r.price_per_kg).toFixed(1)}`).join(' ');
-  const last = rows.length - 1;
+  const line = vals.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const last = vals.length - 1;
   return `<svg viewBox="0 0 ${W} ${H}" class="spark-svg" preserveAspectRatio="none">
-    <path d="${line} L${x(last).toFixed(1)},${H} L${x(0).toFixed(1)},${H} Z" fill="var(--blue)" fill-opacity="0.14"/>
-    <path d="${line}" fill="none" stroke="var(--blue)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="${x(last).toFixed(1)}" cy="${y(rows[last].price_per_kg).toFixed(1)}" r="2.6" fill="var(--blue)"/>
+    <path d="${line} L${x(last).toFixed(1)},${H} L${x(0).toFixed(1)},${H} Z" fill="${color}" fill-opacity="0.14"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${x(last).toFixed(1)}" cy="${y(vals[last]).toFixed(1)}" r="2.6" fill="${color}"/>
   </svg>`;
 }
+function sparklineSVG(rows) { return sparkline(rows.map(r => r.price_per_kg)); }
 
 function won(n) { return n == null ? '-' : n.toLocaleString('ko-KR'); }
 function shift(iso, days) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); }
