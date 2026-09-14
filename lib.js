@@ -271,3 +271,9 @@ const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 export function fmtMdDow(isoStr) {
   return `${fmtMd(isoStr)}(${DOW[parseIso(isoStr).getDay()]})`;
 }
+
+// 양돈 시세 표시용 계열. 토요일처럼 경매 두수가 극히 적은 날(30두 등)은 평균이 널뛰어 헤드라인·전일 대비·그래프를
+// 망치므로 minHead 미만인 날은 뺀다. 두수 미상(null)은 옛 백필 행이라 남긴다.
+export function filterPigSeries(rows, minHead = 300) {
+  return (rows || []).filter(r => r.head_count == null || r.head_count >= minHead);
+}
