@@ -50,7 +50,7 @@ alter table public.work_settings add column if not exists show_notes boolean not
 
 ## 파일
 
-- `settings.js` — `loadSettings`에 `show_notes` 조회·`showNotes` 상태 추가, `setShowNotes(on)` (upsert; 기존 `show_market` 값을 덮어쓰지 않도록 두 컬럼을 함께 보내거나 `update`+없으면 `insert`. → **`upsert`에 현재 `show_market`도 같이 실어 보낸다.** `setShowMarket`도 같은 이유로 `show_notes`를 함께 실어야 한다 — 그렇지 않으면 한쪽을 저장할 때 다른 쪽이 default로 되돌아간다.)
+- `settings.js` — `loadSettings`에 `show_notes` 조회·`state.settings.showNotes` 추가, `setShowNotes(on)` (`setShowMarket`과 같은 꼴의 `upsert`). supabase-js `upsert`는 `merge-duplicates`라 보내지 않은 컬럼은 기존 값을 유지하므로 한쪽 토글이 다른 쪽을 되돌리지 않는다 — 두 함수 모두 자기 컬럼만 보낸다.
 - `index.html` — 설정 행 1개 + 힌트
 - `ui.js` — `applyNotesVisibility()`, `openSettingsDialog`에서 체크 반영
 - `app.js` — 부팅 시 조건부 `loadNotes`, `#setNotes` change 핸들러
@@ -64,7 +64,7 @@ alter table public.work_settings add column if not exists show_notes boolean not
 1. SQL 실행 전: 앱이 뜨고 노트 카드 없음, 설정에 체크박스 있음(켜면 저장 실패 alert + 원복)
 2. SQL 실행 후: 켬 → 카드와 기존 노트가 그대로 보임 → 새로고침해도 유지 → 다른 기기에서도 켜져 있음
 3. 끔 → 카드 사라짐 → 다시 켬 → 노트 그대로
-4. 시세 토글을 바꿔도 노트 설정이 안 바뀌고, 그 반대도 마찬가지 (upsert 덮어쓰기 회귀 확인)
+4. 시세 토글을 바꿔도 노트 설정이 안 바뀌고, 그 반대도 마찬가지 (upsert가 다른 컬럼을 건드리지 않는지 확인)
 
 ## 범위 밖
 
