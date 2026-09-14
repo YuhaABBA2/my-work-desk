@@ -194,3 +194,80 @@ export function rpcErrorMessage(err) {
   if (m.includes('ALREADY_MEMBER')) return '이미 가족에 속해 있습니다.';
   return m || '요청을 처리하지 못했습니다.';
 }
+
+// ---- 아이디어 노트 ----
+// 링크 문법은 본문 안의 [[제목]] 하나. 링크 표는 없고 노트 전체를 훑어 연결·백링크를 계산한다.
+const LINK_RE = /\[\[([^\[\]]+?)\]\]/g;
+
+export function normTitle(s) { return String(s || '').trim().toLowerCase(); }
+
+export function noteLinks(body) {
+  const out = [], seen = new Set();
+  for (const m of String(body || '').matchAll(LINK_RE)) {
+    const t = m[1].trim();
+    const k = normTitle(t);
+    if (!k || seen.has(k)) continue;
+    seen.add(k); out.push(t);
+  }
+  return out;
+}
+
+export function noteBacklinks(title, notes) {
+  const k = normTitle(title);
+  return (notes || []).filter(n => normTitle(n.title) !== k && noteLinks(n.body).some(l => normTitle(l) === k));
+}
+
+export function renameNoteLinks(body, oldTitle, newTitle) {
+  const k = normTitle(oldTitle);
+  return String(body || '').replace(LINK_RE, (m, t) => normTitle(t) === k ? `[[${newTitle}]]` : m);
+}
+
+export function isValidNoteTitle(title) {
+  const t = String(title || '').trim();
+  // 대괄호는 링크 문법과 충돌 — 하나만 있어도 [[제목]]으로 못 가리킨다
+  return t.length >= 1 && t.length <= 100 && !/[\[\]]/.test(t);
+}
+
+// 커서 앞의 "@검색어". @는 줄 시작이나 공백 뒤에서만(이메일 주소를 건드리지 않는다), 줄바꿈을 넘지 않는다.
+export function mentionQuery(text, caret) {
+  const s = String(text || '').slice(0, caret);
+  const at = s.lastIndexOf('@');
+  if (at < 0) return null;
+  if (at > 0 && !/\s/.test(s[at - 1])) return null;
+  const query = s.slice(at + 1);
+  if (query.includes('\n')) return null;
+  return { start: at, query };
+}
+
+export function applyMention(text, start, caret, title) {
+  const s = String(text || '');
+  const ins = `[[${title}]] `;
+  return { text: s.slice(0, start) + ins + s.slice(caret), caret: start + ins.length };
+}
+
+export function searchNotes(notes, q) {
+  const k = String(q || '').trim().toLowerCase();
+  return (notes || [])
+    .filter(n => !k || String(n.title || '').toLowerCase().includes(k) || String(n.body || '').toLowerCase().includes(k))
+    .sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+}
+
+export function renderNoteBody(body, titles) {
+  const s = String(body || '');
+  let out = '', last = 0;
+  for (const m of s.matchAll(LINK_RE)) {
+    out += esc(s.slice(last, m.index));
+    const t = m[1].trim();
+    out += titles.has(normTitle(t))
+      ? `<button type="button" class="note-link" data-action="open-note" data-title="${esc(t)}">${esc(t)}</button>`
+      : `<span class="note-link broken">${esc(t)}</span>`;
+    last = m.index + m[0].length;
+  }
+  out += esc(s.slice(last));
+  return out.replace(/\n/g, '<br>');
+}
+
+const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+export function fmtMdDow(isoStr) {
+  return `${fmtMd(isoStr)}(${DOW[parseIso(isoStr).getDay()]})`;
+}

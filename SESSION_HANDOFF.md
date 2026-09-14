@@ -14,7 +14,7 @@
 ## 운영 원칙 (Global Constraints)
 
 - service_role 키를 코드·문서·대화에 절대 두지 않는다. 브라우저는 publishable key(`sb_publishable_…`)만.
-- 다른 앱과 같은 Supabase 프로젝트를 쓰므로 `work_tasks`·`work_projects`·`families`·`family_members`·`work_settings`·`push_subscriptions`·`notification_log` 외에는 건드리지 않는다. `pig_price`는 읽기만 허용됨.
+- 다른 앱과 같은 Supabase 프로젝트를 쓰므로 `work_tasks`·`work_projects`·`families`·`family_members`·`work_settings`·`push_subscriptions`·`notification_log`·`work_notes` 외에는 건드리지 않는다. `pig_price`는 읽기만 허용됨.
 - `work_tasks` RLS는 **"본인 또는 내 가족(`family_id`)"**. `create_family`/`join_family`는 security definer RPC(로그인 사용자만). `work_tasks.user_id`·`family_members.family_id`는 컬럼 권한으로 변경 불가.
 - 정적 Vercel 배포 — 브라우저에서 못 부르는 API는 pig-farm-log 서버 함수(또는 크론)로.
 - **pig-farm-log push 시 커밋 author 이메일은 `jskim1@woosung.kr` 이어야 Vercel 자동 배포됨**. `bethebrave91@gmail.com`으로 push된 커밋은 "member of Vercel team이 아님"으로 거부됨(2026-09-12 확인).
@@ -45,6 +45,15 @@
 - 로그인 시 자기 "가족 일정"/"가족일정"(띄어쓰기 무관) 업무 중 `family_id`가 null인 것을 소급 태그.
 - 카드: 구성원 목록(만든 계정에 **"가장"** 뱃지), 표시 이름 수정, 가장은 초대 코드 재발급, 구성원은 나가기.
 - 남이 만든 가족 업무는 카드 메타 끝에 작성자 이름 표시.
+
+### 아이디어 노트 (제텔카스텐, 본인 전용) — 2026-09-14
+
+- `work_notes`(id, user_id, title, body, updated_at). RLS 본인만. 제목은 계정 안 유일(대소문자·공백 무시), 대괄호 금지.
+- 링크는 본문 `[[제목]]`이 전부 — 링크 표 없음. 연결·백링크는 클라에서 `lib.js noteLinks/noteBacklinks`로 계산.
+- 제목 바꾸면 `notes.js saveNote`가 백링크 본문의 `[[옛제목]]`을 함께 치환. 삭제하면 남은 링크는 회색 취소선(끊긴 링크).
+- 편집은 textarea. `@`(줄 시작·공백 뒤)로 제목 검색 → 선택하면 `[[제목]] ` 삽입. 없는 제목이면 "새 노트 만들기".
+- 화면: 대시보드 카드(최근 5장·검색, `notes-ui.js`) → `noteDialog` 읽기/편집. 링크 타고 들어간 만큼 `state.noteStack`, ← 뒤로.
+- 가족 공유·태그·노트→업무 전환은 안 만듦. 스펙 `docs/superpowers/specs/2026-09-14-idea-notes-design.md`, 계획 `docs/superpowers/plans/2026-09-14-idea-notes.md`.
 
 ### 시세·투자 패널 (관리자 전용)
 

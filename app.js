@@ -11,6 +11,8 @@ import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
 import { pushSupported, getPushState, enablePush, disablePush } from './notify.js';
 import { loadFamily, createFamily, joinFamily, leaveFamily, regenerateCode, renameMe, defaultDisplayName } from './family.js';
 import { loadSettings, setShowMarket } from './settings.js';
+import { loadNotes } from './notes.js';
+import { renderNotesCard, openNote, openNoteByTitle, goBackNote, closeNoteDialog, onDeleteCurrentNote, setNoteStatus, openNoteEditor, onNoteFormSubmit, cancelNoteEdit, onNoteBodyInput, onNoteBodyKeydown, onMentionClick, currentNoteId, hideMention } from './notes-ui.js';
 
 async function handleTaskAction(e) {
   const action = e.target.dataset.action;
@@ -133,6 +135,9 @@ async function start() {
   if (fixErr) setProjectStatus('기본 프로젝트를 만들지 못했습니다. 새로고침 후 다시 시도해 주세요.');
   renderProjects();
   renderFamily();
+  const notesErr = await loadNotes();
+  setNoteStatus(notesErr ? '노트를 불러오지 못했습니다. Supabase에 work_notes SQL을 적용했는지 확인해 주세요.' : '');
+  renderNotesCard();
   applyMarketVisibility();
   syncShareFamilyForProject();
   if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); }
@@ -359,5 +364,35 @@ $('#reactionsPalette').addEventListener('click', async (e) => {
   openReactionsFor(taskId);   // refresh palette state
   render();                    // refresh task rows
 });
+// ---- 아이디어 노트 ----
+$('#noteSearch').addEventListener('input', renderNotesCard);
+$('#noteList').addEventListener('click', e => {
+  const b = e.target.closest('[data-action="open-note-id"]');
+  if (b) openNote(b.dataset.id, true);
+});
+$('#noteDialog').addEventListener('click', e => {
+  const b = e.target.closest('[data-action]');
+  if (!b) return;
+  if (b.dataset.action === 'open-note-id') openNote(b.dataset.id, true);
+  if (b.dataset.action === 'open-note') openNoteByTitle(b.dataset.title);
+});
+$('#noteBack').onclick = goBackNote;
+$('#noteClose').onclick = closeNoteDialog;
+$('#noteDeleteBtn').onclick = onDeleteCurrentNote;
+$('#noteDialog').addEventListener('close', () => { state.noteStack = []; });
+$('#noteAddBtn').onclick = () => openNoteEditor(null);
+$('#noteEditBtn').onclick = () => openNoteEditor(currentNoteId());
+$('#noteEdit').addEventListener('submit', onNoteFormSubmit);
+$('#noteCancel').onclick = cancelNoteEdit;
+$('#noteBody').addEventListener('input', onNoteBodyInput);
+$('#noteBody').addEventListener('click', onNoteBodyInput);
+$('#noteBody').addEventListener('keyup', e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) onNoteBodyInput(); });
+$('#noteBody').addEventListener('keydown', onNoteBodyKeydown);
+// 즉시 숨기지 않는다 — iOS Safari는 팝업 항목 탭 때 blur가 click보다 먼저 와서 mention이 지워지면 선택이 죽는다.
+// 잠깐 뒤 포커스가 textarea로 안 돌아왔을 때만 닫는다(pickMention은 끝에 ta.focus()로 돌아온다).
+$('#noteBody').addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== $('#noteBody')) hideMention(); }, 200));
+$('#noteMention').addEventListener('mousedown', e => e.preventDefault()); // textarea 포커스 유지
+$('#noteMention').addEventListener('click', onMentionClick);
+
 sb.auth.onAuthStateChange((_event, session) => { if (session && !state.user) start(); });
 start();

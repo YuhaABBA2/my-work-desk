@@ -257,3 +257,25 @@ create policy task_reactions_insert on public.task_reactions for insert to authe
 drop policy if exists task_reactions_delete on public.task_reactions;
 create policy task_reactions_delete on public.task_reactions for delete to authenticated
   using (user_id = (select auth.uid()));
+
+-- ---------- 아이디어 노트 (제텔카스텐, 본인 전용) ----------
+create table if not exists public.work_notes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title text not null check (char_length(title) between 1 and 100),
+  body text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists work_notes_user_title_idx
+on public.work_notes (user_id, lower(btrim(title)));
+
+alter table public.work_notes enable row level security;
+
+drop policy if exists "Users manage only their own work notes" on public.work_notes;
+create policy "Users manage only their own work notes"
+on public.work_notes for all
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
