@@ -385,6 +385,7 @@ $('#noteEditBtn').onclick = () => openNoteEditor(currentNoteId());
 $('#noteEdit').addEventListener('submit', onNoteFormSubmit);
 $('#noteCancel').onclick = cancelNoteEdit;
 $('#noteBody').addEventListener('input', onNoteBodyInput);
+$('#noteBody').addEventListener('click', onNoteBodyInput);
 $('#noteBody').addEventListener('keyup', e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) onNoteBodyInput(); });
 $('#noteBody').addEventListener('keydown', onNoteBodyKeydown);
 $('#noteMention').addEventListener('mousedown', e => e.preventDefault()); // textarea 포커스 유지

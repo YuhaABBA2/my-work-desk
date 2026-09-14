@@ -143,20 +143,29 @@ export function onNoteBodyInput() {
   renderMention();
 }
 
+let picking = false;
+
 async function pickMention(i) {
+  if (picking) return;
   const it = mention?.items[i];
   if (!it) return;
-  const ta = $('#noteBody');
-  if (it.create) {
-    const err = await saveNote({ title: it.title, body: '' });
-    if (err) return alert(err.message || '노트를 만들지 못했습니다.');
-    renderNotesCard();
+  const { start } = mention;
+  picking = true;
+  try {
+    const ta = $('#noteBody');
+    if (it.create) {
+      const err = await saveNote({ title: it.title, body: '' });
+      if (err) return alert(err.message || '노트를 만들지 못했습니다.');
+      renderNotesCard();
+    }
+    const r = applyMention(ta.value, start, ta.selectionStart, it.title);
+    ta.value = r.text;
+    ta.setSelectionRange(r.caret, r.caret);
+    hideMention();
+    ta.focus();
+  } finally {
+    picking = false;
   }
-  const r = applyMention(ta.value, mention.start, ta.selectionStart, it.title);
-  ta.value = r.text;
-  ta.setSelectionRange(r.caret, r.caret);
-  hideMention();
-  ta.focus();
 }
 
 export function onMentionClick(e) {
