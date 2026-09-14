@@ -71,3 +71,13 @@ alter table public.work_settings add column if not exists show_notes boolean not
 - 기존 노트 보유 계정 자동 켜기
 - 노트 데이터 삭제(끄기는 숨김일 뿐)
 - 가족 공유
+
+## 추가 (2026-09-14, 사용자 요청): 시세·투자 패널도 같은 방식으로
+
+- `시세·투자 패널 보기` 설정 행을 **모든 계정에** 보인다. 가족 가장 여부(`state.family.isAdmin`) 가드를 `applyMarketVisibility`와
+  `openSettingsDialog` 양쪽에서 없앤다. 패널 표시 조건은 `state.settings.showMarket` 하나.
+- 컬럼(`show_market`)·기본값(끔)·저장 함수(`setShowMarket`)는 그대로.
+- 함께 고치는 결함: `applyMarketVisibility`가 9/13에 제거된 헤더 버튼 `#toggleMarket`을 아직 참조해 `null.hidden = …`
+  TypeError가 나고, 그 뒤 `loadMarket()`이 실행되지 않는다(부팅·설정 토글 양쪽). 참조를 지운다.
+- 가족을 만들거나 합류·탈퇴할 때 `applyMarketVisibility()`를 다시 부르던 호출은 남겨도 무해하지만 의미가 없어졌으므로 지운다.
+- `SESSION_HANDOFF.md`의 "시세·투자 패널 (관리자 전용)" 항목을 "계정 설정"으로 고친다.
