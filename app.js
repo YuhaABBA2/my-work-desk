@@ -388,7 +388,9 @@ $('#noteBody').addEventListener('input', onNoteBodyInput);
 $('#noteBody').addEventListener('click', onNoteBodyInput);
 $('#noteBody').addEventListener('keyup', e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) onNoteBodyInput(); });
 $('#noteBody').addEventListener('keydown', onNoteBodyKeydown);
-$('#noteBody').addEventListener('blur', () => hideMention());
+// 즉시 숨기지 않는다 — iOS Safari는 팝업 항목 탭 때 blur가 click보다 먼저 와서 mention이 지워지면 선택이 죽는다.
+// 잠깐 뒤 포커스가 textarea로 안 돌아왔을 때만 닫는다(pickMention은 끝에 ta.focus()로 돌아온다).
+$('#noteBody').addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== $('#noteBody')) hideMention(); }, 200));
 $('#noteMention').addEventListener('mousedown', e => e.preventDefault()); // textarea 포커스 유지
 $('#noteMention').addEventListener('click', onMentionClick);
 
