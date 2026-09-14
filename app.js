@@ -12,7 +12,7 @@ import { pushSupported, getPushState, enablePush, disablePush } from './notify.j
 import { loadFamily, createFamily, joinFamily, leaveFamily, regenerateCode, renameMe, defaultDisplayName } from './family.js';
 import { loadSettings, setShowMarket } from './settings.js';
 import { loadNotes } from './notes.js';
-import { renderNotesCard, openNote, openNoteByTitle, goBackNote, closeNoteDialog, onDeleteCurrentNote, setNoteStatus, openNoteEditor, onNoteFormSubmit, cancelNoteEdit, onNoteBodyInput, onNoteBodyKeydown, onMentionClick, currentNoteId } from './notes-ui.js';
+import { renderNotesCard, openNote, openNoteByTitle, goBackNote, closeNoteDialog, onDeleteCurrentNote, setNoteStatus, openNoteEditor, onNoteFormSubmit, cancelNoteEdit, onNoteBodyInput, onNoteBodyKeydown, onMentionClick, currentNoteId, hideMention } from './notes-ui.js';
 
 async function handleTaskAction(e) {
   const action = e.target.dataset.action;
@@ -388,6 +388,7 @@ $('#noteBody').addEventListener('input', onNoteBodyInput);
 $('#noteBody').addEventListener('click', onNoteBodyInput);
 $('#noteBody').addEventListener('keyup', e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) onNoteBodyInput(); });
 $('#noteBody').addEventListener('keydown', onNoteBodyKeydown);
+$('#noteBody').addEventListener('blur', () => hideMention());
 $('#noteMention').addEventListener('mousedown', e => e.preventDefault()); // textarea 포커스 유지
 $('#noteMention').addEventListener('click', onMentionClick);
 

@@ -15,6 +15,7 @@ function noteItemHTML(n) {
 
 // 대시보드 카드: 검색어 있으면 결과 전부, 없으면 최근 수정 5장.
 export function renderNotesCard() {
+  if (!state.notesReady) { $('#noteList').innerHTML = ''; return; }
   const q = $('#noteSearch')?.value || '';
   const list = searchNotes(state.notes, q);
   const shown = q.trim() ? list : list.slice(0, 5);
@@ -43,6 +44,7 @@ function renderRead(n) {
 export function openNote(id, push = true) {
   const n = state.notes.find(x => x.id === id);
   if (!n) return;
+  if (push && currentNoteId() === id) push = false;
   if (push) state.noteStack.push(id);
   else if (state.noteStack.length) state.noteStack[state.noteStack.length - 1] = id;
   else state.noteStack.push(id);
@@ -86,6 +88,7 @@ export async function onDeleteCurrentNote() {
 let mention = null; // { start, query, items: [{title, create?}], active }
 
 export function openNoteEditor(id) {
+  if (!state.notesReady) { alert('노트를 불러오지 못했습니다. Supabase에 work_notes SQL을 적용했는지 확인해 주세요.'); return; }
   const n = id ? state.notes.find(x => x.id === id) : null;
   $('#noteId').value = n?.id || '';
   $('#noteTitle').value = n?.title || '';
@@ -120,7 +123,7 @@ export async function onNoteFormSubmit(e) {
 }
 
 // ---- @ 멘션 팝업 ----
-function hideMention() { mention = null; const el = $('#noteMention'); el.hidden = true; el.innerHTML = ''; }
+export function hideMention() { mention = null; const el = $('#noteMention'); el.hidden = true; el.innerHTML = ''; }
 
 function renderMention() {
   const el = $('#noteMention');
@@ -150,15 +153,16 @@ async function pickMention(i) {
   const it = mention?.items[i];
   if (!it) return;
   const { start } = mention;
+  const ta = $('#noteBody');
+  const end = ta.selectionStart;
   picking = true;
   try {
-    const ta = $('#noteBody');
     if (it.create) {
       const err = await saveNote({ title: it.title, body: '' });
       if (err) return alert(err.message || '노트를 만들지 못했습니다.');
       renderNotesCard();
     }
-    const r = applyMention(ta.value, start, ta.selectionStart, it.title);
+    const r = applyMention(ta.value, start, end, it.title);
     ta.value = r.text;
     ta.setSelectionRange(r.caret, r.caret);
     hideMention();

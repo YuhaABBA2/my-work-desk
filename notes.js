@@ -19,6 +19,7 @@ export function findNoteByTitle(title) {
 
 // 저장. 제목이 바뀌면 그 제목을 가리키던 다른 노트의 [[옛제목]]도 함께 바꾼다.
 export async function saveNote({ id, title, body }) {
+  if (!state.notesReady) return new Error('노트를 불러오지 못해 저장할 수 없습니다.');
   title = String(title || '').trim();
   body = String(body || '');
   if (!isValidNoteTitle(title)) return new Error('제목은 1~100자이고 [[ ]] 를 포함할 수 없습니다.');
@@ -32,6 +33,7 @@ export async function saveNote({ id, title, body }) {
   }
   const prev = state.notes.find(n => n.id === id);
   if (prev && normTitle(prev.title) !== normTitle(title)) {
+    body = renameNoteLinks(body, prev.title, title);
     for (const n of noteBacklinks(prev.title, state.notes)) {
       const { error } = await sb.from('work_notes')
         .update({ body: renameNoteLinks(n.body, prev.title, title), updated_at: now }).eq('id', n.id);
@@ -44,6 +46,7 @@ export async function saveNote({ id, title, body }) {
 }
 
 export async function deleteNote(id) {
+  if (!state.notesReady) return new Error('노트를 불러오지 못해 삭제할 수 없습니다.');
   const { error } = await sb.from('work_notes').delete().eq('id', id);
   if (error) return error;
   return loadNotes();
