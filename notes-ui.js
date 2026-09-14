@@ -1,7 +1,7 @@
 import { $ } from './ui.js';
 import { state } from './state.js';
-import { iso, esc, searchNotes, noteLinks, noteBacklinks, renderNoteBody, normTitle, fmtMdDow } from './lib.js';
-import { deleteNote, findNoteByTitle } from './notes.js';
+import { iso, esc, searchNotes, noteLinks, noteBacklinks, renderNoteBody, normTitle, fmtMdDow, mentionQuery, applyMention } from './lib.js';
+import { deleteNote, findNoteByTitle, saveNote } from './notes.js';
 
 export function setNoteStatus(msg) { const el = $('#noteStatus'); if (el) el.textContent = msg || ''; }
 
@@ -80,4 +80,94 @@ export async function onDeleteCurrentNote() {
   if (err) return alert(err.message || '삭제하지 못했습니다.');
   closeNoteDialog();
   renderNotesCard();
+}
+
+// ---- 편집 모드 ----
+let mention = null; // { start, query, items: [{title, create?}], active }
+
+export function openNoteEditor(id) {
+  const n = id ? state.notes.find(x => x.id === id) : null;
+  $('#noteId').value = n?.id || '';
+  $('#noteTitle').value = n?.title || '';
+  $('#noteBody').value = n?.body || '';
+  hideMention();
+  $('#noteRead').hidden = true;
+  $('#noteEdit').hidden = false;
+  $('#noteBack').hidden = true;
+  const d = $('#noteDialog');
+  if (!d.open) d.showModal();
+  if (!n) state.noteStack = [];
+  $('#noteTitle').focus();
+}
+
+export function cancelNoteEdit() {
+  const id = currentNoteId();
+  if (id) openNote(id, false); else closeNoteDialog();
+}
+
+export async function onNoteFormSubmit(e) {
+  e.preventDefault();
+  const id = $('#noteId').value || null;
+  const title = $('#noteTitle').value;
+  const body = $('#noteBody').value;
+  $('#noteSave').disabled = true;
+  const err = await saveNote({ id, title, body });
+  $('#noteSave').disabled = false;
+  if (err) return alert(err.message || '저장하지 못했습니다.');
+  renderNotesCard();
+  const saved = findNoteByTitle(title);
+  if (saved) openNote(saved.id, false);
+}
+
+// ---- @ 멘션 팝업 ----
+function hideMention() { mention = null; const el = $('#noteMention'); el.hidden = true; el.innerHTML = ''; }
+
+function renderMention() {
+  const el = $('#noteMention');
+  el.innerHTML = mention.items.map((it, i) =>
+    `<button type="button" class="${it.create ? 'create' : ''}${i === mention.active ? ' active' : ''}" data-i="${i}">${it.create ? `'${esc(it.title)}' 새 노트 만들기` : esc(it.title)}</button>`
+  ).join('');
+  el.hidden = false;
+}
+
+export function onNoteBodyInput() {
+  const ta = $('#noteBody');
+  const m = mentionQuery(ta.value, ta.selectionStart);
+  if (!m) return hideMention();
+  const selfId = $('#noteId').value;
+  const q = m.query.trim();
+  const items = searchNotes(state.notes, q).filter(n => n.id !== selfId).slice(0, 8).map(n => ({ title: n.title }));
+  if (q && !findNoteByTitle(q)) items.push({ title: q, create: true });
+  if (!items.length) return hideMention();
+  mention = { start: m.start, items, active: 0 };
+  renderMention();
+}
+
+async function pickMention(i) {
+  const it = mention?.items[i];
+  if (!it) return;
+  const ta = $('#noteBody');
+  if (it.create) {
+    const err = await saveNote({ title: it.title, body: '' });
+    if (err) return alert(err.message || '노트를 만들지 못했습니다.');
+    renderNotesCard();
+  }
+  const r = applyMention(ta.value, mention.start, ta.selectionStart, it.title);
+  ta.value = r.text;
+  ta.setSelectionRange(r.caret, r.caret);
+  hideMention();
+  ta.focus();
+}
+
+export function onMentionClick(e) {
+  const b = e.target.closest('button[data-i]');
+  if (b) pickMention(Number(b.dataset.i));
+}
+
+export function onNoteBodyKeydown(e) {
+  if (!mention) return;
+  if (e.key === 'Escape') { e.preventDefault(); hideMention(); return; }
+  if (e.key === 'ArrowDown') { e.preventDefault(); mention.active = (mention.active + 1) % mention.items.length; renderMention(); return; }
+  if (e.key === 'ArrowUp') { e.preventDefault(); mention.active = (mention.active - 1 + mention.items.length) % mention.items.length; renderMention(); return; }
+  if (e.key === 'Enter') { e.preventDefault(); pickMention(mention.active); }
 }
