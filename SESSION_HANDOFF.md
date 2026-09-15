@@ -56,6 +56,13 @@
 - **기본 숨김.** 프로필 → 설정 → "아이디어 노트 보기"로 계정별 켬(`work_settings.show_notes`). 꺼져 있으면 카드도 없고 `loadNotes()`도 안 부른다. 끄기는 숨김일 뿐 노트는 남는다. 배포 후 기존 사용자도 한 번 켜야 한다. 스펙 `docs/superpowers/specs/2026-09-14-notes-opt-in-design.md`.
 - 가족 공유·태그·노트→업무 전환은 안 만듦. 스펙 `docs/superpowers/specs/2026-09-14-idea-notes-design.md`, 계획 `docs/superpowers/plans/2026-09-14-idea-notes.md`.
 
+### 가족 일정 등록 알림 + 반복 지난 회차 접기 — 2026-09-15
+
+- **등록 알림**: `work_tasks` INSERT 트리거 `work_tasks_created_hook` → `public.notify_task_created()`(pg_net `net.http_post`) → pig-farm-log `POST /api/hooks/task-created`. 서버가 id로 행을 재조회해 `family_id` 있는 것만, 가족 구성원 중 **등록자 제외**에 푸시. 반복은 시리즈의 가장 이른 회차 1건만. `notification_log.reminder_kind='new'`(제약에 추가됨)로 중복 방지. 시크릿 없음(Vercel env 접근 불가) — payload 무시·재조회로 대신함.
+- **지난 회차 접기**: `lib.js isStaleRepeat` — 반복 시리즈의 미완료 지난 회차는 남은 업무 카운트·마감 임박·저녁 배너에서 제외. 캘린더·상세엔 "지남" 배지로 남음.
+- 아침 요약 크론의 "오늘" 판정은 pig-farm-log `lib/task-day.ts`(데스크 `spansDay`와 동일)로 고침 — 종료일 없으면 당일만.
+- 스펙 `docs/superpowers/specs/2026-09-15-family-task-alert-design.md`.
+
 ### 시세·투자 패널 (계정 설정)
 
 - `work_settings.show_market` 계정별 설정. 기본 꺼짐.
