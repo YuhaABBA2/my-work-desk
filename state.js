@@ -18,7 +18,8 @@ export const state = {
   holidays: {},     // { [iso]: '공휴일 이름' } — holidays.js 가 채운다
   notes: [],        // 아이디어 노트 { id, title, body, updated_at } — notes.js 가 채운다
   notesReady: false,
-  noteStack: []     // 노트 뷰에서 링크 타고 들어간 노트 id 스택 (← 뒤로)
+  noteStack: [],    // 노트 뷰에서 링크 타고 들어간 노트 id 스택 (← 뒤로)
+  noteTab: (() => { try { return localStorage.getItem('noteTab') || 'all'; } catch { return 'all'; } })() // 노트 카드 탭
 };
 
 // 기기별 취향은 localStorage 유지

@@ -285,3 +285,33 @@ on public.work_notes for all
 to authenticated
 using ((select auth.uid()) = user_id)
 with check ((select auth.uid()) = user_id);
+
+-- 2026-09-15: 노트 종류 + 첨부파일
+alter table public.work_notes add column if not exists kind text not null default 'idea' check (kind in ('idea','memo','meeting'));
+create table if not exists public.work_note_files (
+  id uuid primary key default gen_random_uuid(),
+  note_id uuid not null references public.work_notes(id) on delete cascade,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  path text not null unique,
+  name text not null,
+  mime text not null default '',
+  size integer not null default 0,
+  created_at timestamptz not null default now()
+);
+create index if not exists work_note_files_note_idx on public.work_note_files(note_id);
+alter table public.work_note_files enable row level security;
+drop policy if exists work_note_files_all on public.work_note_files;
+create policy work_note_files_all on public.work_note_files for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+-- 스토리지: 비공개 버킷, 10MB. 경로 첫 폴더 = 내 uid 인 객체만.
+insert into storage.buckets (id, name, public, file_size_limit) values ('note-files', 'note-files', false, 10485760)
+  on conflict (id) do update set public = false, file_size_limit = 10485760;
+drop policy if exists note_files_select on storage.objects;
+drop policy if exists note_files_insert on storage.objects;
+drop policy if exists note_files_delete on storage.objects;
+create policy note_files_select on storage.objects for select to authenticated
+  using (bucket_id = 'note-files' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy note_files_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'note-files' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy note_files_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'note-files' and (storage.foldername(name))[1] = auth.uid()::text);

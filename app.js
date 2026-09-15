@@ -13,7 +13,7 @@ import { pushSupported, getPushState, enablePush, disablePush } from './notify.j
 import { loadFamily, createFamily, joinFamily, leaveFamily, regenerateCode, renameMe, defaultDisplayName } from './family.js';
 import { loadSettings, setShowMarket, setShowNotes } from './settings.js';
 import { loadNotes } from './notes.js';
-import { renderNotesCard, openNote, openNoteByTitle, goBackNote, closeNoteDialog, onDeleteCurrentNote, setNoteStatus, openNoteEditor, onNoteFormSubmit, cancelNoteEdit, onNoteBodyInput, onNoteBodyKeydown, onMentionClick, currentNoteId, hideMention } from './notes-ui.js';
+import { renderNotesCard, openNote, openNoteByTitle, goBackNote, closeNoteDialog, onDeleteCurrentNote, setNoteStatus, openNoteEditor, onNoteFormSubmit, cancelNoteEdit, onNoteBodyInput, onNoteBodyKeydown, onMentionClick, currentNoteId, hideMention, setNoteTab, onNoteFilesPicked, onEditFilesClick, onKindChange, openImagePreview, closeImagePreview } from './notes-ui.js';
 
 async function handleTaskAction(e) {
   const action = e.target.dataset.action;
@@ -385,12 +385,20 @@ $('#noteDialog').addEventListener('click', e => {
   if (!b) return;
   if (b.dataset.action === 'open-note-id') openNote(b.dataset.id, true);
   if (b.dataset.action === 'open-note') openNoteByTitle(b.dataset.title);
+  if (b.dataset.action === 'preview-image') openImagePreview(b.dataset.url, b.dataset.name);
 });
+$('#noteTabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) setNoteTab(b.dataset.tab); });
+$('#noteFileAdd').onclick = () => $('#noteFileInput').click();
+$('#noteFileInput').addEventListener('change', onNoteFilesPicked);
+$('#noteEditFiles').addEventListener('click', onEditFilesClick);
+$('#noteEdit').addEventListener('change', e => { if (e.target.name === 'kind') onKindChange(); });
+$('#imgClose').onclick = closeImagePreview;
+$('#imgDialog').addEventListener('click', e => { if (e.target === e.currentTarget) closeImagePreview(); }); // 바깥(backdrop) 탭
 $('#noteBack').onclick = goBackNote;
 $('#noteClose').onclick = closeNoteDialog;
 $('#noteDeleteBtn').onclick = onDeleteCurrentNote;
 $('#noteDialog').addEventListener('close', () => { state.noteStack = []; });
-$('#noteAddBtn').onclick = () => openNoteEditor(null);
+$('#noteAddBtn').onclick = () => openNoteEditor(null, state.noteTab);
 $('#noteEditBtn').onclick = () => openNoteEditor(currentNoteId());
 $('#noteEdit').addEventListener('submit', onNoteFormSubmit);
 $('#noteCancel').onclick = cancelNoteEdit;
