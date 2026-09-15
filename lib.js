@@ -368,9 +368,9 @@ export function fmtBytes(n) {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
-// storage 경로에 넣을 파일명. 경로 구분자·와일드카드·제어문자만 치우고 한글·공백·괄호는 둔다.
-export function safeFileName(name) {
-  // 구분자(/ 와 역슬래시)·금지문자 → '_', 앞머리의 점·밑줄은 떼어낸다 ('../..\\evil/x' → 'evil_x').
-  const s = String(name || '').replace(/[\\/:*?"<>|\x00-\x1f]/g, '_').replace(/^[._]+/, '').trim();
-  return (s || 'file').slice(0, 100);
+// storage 객체 키에 붙일 확장자. Supabase Storage 는 한글·공백·괄호가 든 키를 "Invalid key"로 거부하므로
+// (2026-09-15 프로덕션에서 확인) 경로엔 uuid + 확장자만 쓰고 원래 파일명은 work_note_files.name 에만 둔다.
+export function fileExt(name) {
+  const m = /\.([a-z0-9]{1,8})$/i.exec(String(name || '').trim());
+  return m ? m[1].toLowerCase() : '';
 }
