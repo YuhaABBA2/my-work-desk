@@ -9,7 +9,8 @@ import {
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
   filterPigSeries,
   indexDelta, fmtIndex, krxSearch, normalizeWatchlist, DEFAULT_WATCHLIST,
-  isStaleRepeat
+  isStaleRepeat,
+  NOTE_KINDS, kindLabel, noteTemplate, filterNotesByKind, isImageMime, fmtBytes, safeFileName
 } from '../lib.js';
 
 test('parseIso → iso 왕복', () => {
@@ -382,4 +383,41 @@ test('isStaleRepeat: 반복 시리즈의 지난 미완료 회차만', () => {
   assert.equal(isStaleRepeat({ seriesId: 's1', done: false, date: '2026-09-15', endDate: null }, today), false);  // 오늘 회차
   assert.equal(isStaleRepeat({ seriesId: 's1', done: false, date: '2026-09-14', endDate: '2026-09-16' }, today), false); // 기간 중
   assert.equal(isStaleRepeat({ seriesId: 's1', done: false, date: '2026-09-10', endDate: '2026-09-14' }, today), true);
+});
+
+test('노트 종류: 라벨·기본값', () => {
+  assert.deepEqual(NOTE_KINDS.map(k => k.key), ['idea', 'memo', 'meeting']);
+  assert.equal(kindLabel('meeting'), '회의록');
+  assert.equal(kindLabel('memo'), '메모');
+  assert.equal(kindLabel(undefined), '아이디어');
+  assert.equal(kindLabel('junk'), '아이디어');
+});
+
+test('noteTemplate: 회의록만 틀, 일시는 M/D(요일)', () => {
+  assert.equal(noteTemplate('meeting', '2026-09-15'), '일시: 9/15(화)' + String.fromCharCode(10) + '참석자: ' + String.fromCharCode(10) + '아젠다: ' + String.fromCharCode(10) + '내용: ' + String.fromCharCode(10));
+  assert.equal(noteTemplate('idea', '2026-09-15'), '');
+  assert.equal(noteTemplate('memo', '2026-09-15'), '');
+});
+
+test('filterNotesByKind: all 이면 전부, 종류 없는 옛 노트는 idea 취급', () => {
+  const notes = [{ id: '1', kind: 'idea' }, { id: '2', kind: 'meeting' }, { id: '3' }];
+  assert.deepEqual(filterNotesByKind(notes, 'all').map(n => n.id), ['1', '2', '3']);
+  assert.deepEqual(filterNotesByKind(notes, 'idea').map(n => n.id), ['1', '3']);
+  assert.deepEqual(filterNotesByKind(notes, 'meeting').map(n => n.id), ['2']);
+  assert.deepEqual(filterNotesByKind(notes, 'memo'), []);
+});
+
+test('isImageMime / fmtBytes / safeFileName', () => {
+  assert.equal(isImageMime('image/jpeg'), true);
+  assert.equal(isImageMime('application/pdf'), false);
+  assert.equal(isImageMime(''), false);
+  assert.equal(fmtBytes(0), '0 B');
+  assert.equal(fmtBytes(999), '999 B');
+  assert.equal(fmtBytes(12600), '12.3 KB');
+  assert.equal(fmtBytes(4.6 * 1024 * 1024), '4.6 MB');
+  assert.equal(safeFileName('회의 사진 (1).JPG'), '회의 사진 (1).JPG');
+  assert.equal(safeFileName('../..\\evil/name?.png'), 'evil_name_.png'); // 역슬래시(윈도우 경로)도 구분자로 본다
+  assert.equal(safeFileName('C:\\Users\\WS\\사진.jpg'), 'C__Users_WS_사진.jpg'); // ':' 와 '\' 각각 '_'
+  assert.equal(safeFileName('   '), 'file');
+  assert.equal(safeFileName('a'.repeat(150) + '.png').length, 100);
 });
