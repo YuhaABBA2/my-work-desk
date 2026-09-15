@@ -40,6 +40,8 @@ function renderTiles() {
 async function refresh() {
   const list = state.settings.watchlist;
   if (!list.length) return;
+  const btn = $('#tickerRefresh');
+  if (btn) btn.disabled = true;
   try {
     const res = await fetch(`${API}/quotes?symbols=${encodeURIComponent(list.map(w => w.symbol).join(','))}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -50,7 +52,16 @@ async function refresh() {
   } catch {
     renderTiles();
     setStatus('지표를 불러오지 못했습니다. 잠시 후 다시 시도합니다.');
+  } finally {
+    if (btn) btn.disabled = false;
   }
+}
+
+// 새로고침 버튼: 지금 한 번 받고 1분 주기를 다시 센다.
+export function refreshTicker() {
+  stopTicker();
+  refresh();
+  if (visible()) timer = setInterval(refresh, INTERVAL_MS);
 }
 
 function visible() {

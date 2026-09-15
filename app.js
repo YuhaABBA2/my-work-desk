@@ -7,8 +7,8 @@ import { toggleReaction } from './reactions.js';
 import { initHolidays } from './holidays.js';
 initHolidays();
 import { loadProjects, addProject, deleteProject, migrateLocalProjects, ensureFixedProjects } from './projects.js';
-import { loadMarket, renderInvestment, renderStockLinks } from './market.js';
-import { startTicker, stopTicker, openWatchDialog, closeWatchDialog, onWatchQueryInput, onWatchDialogClick, onWatchReset } from './ticker.js';
+import { loadMarket } from './market.js';
+import { startTicker, stopTicker, refreshTicker, openWatchDialog, closeWatchDialog, onWatchQueryInput, onWatchDialogClick, onWatchReset } from './ticker.js';
 import { pushSupported, getPushState, enablePush, disablePush } from './notify.js';
 import { loadFamily, createFamily, joinFamily, leaveFamily, regenerateCode, renameMe, defaultDisplayName } from './family.js';
 import { loadSettings, setShowMarket, setShowNotes } from './settings.js';
@@ -145,7 +145,7 @@ async function start() {
   if (state.settings.showNotes) await refreshNotes();
   applyMarketVisibility();
   syncShareFamilyForProject();
-  if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); startTicker(); }
+  if (!$('.market-card').hidden) { loadMarket(); startTicker(); }
 }
 
 
@@ -192,7 +192,7 @@ $('#setMarket').addEventListener('change', async e => {
   const err = await setShowMarket(e.target.checked);
   if (err) { alert(err.message || '설정을 저장하지 못했습니다.'); e.target.checked = !e.target.checked; return; }
   applyMarketVisibility();
-  if (!$('.market-card').hidden) { renderInvestment(); loadMarket(); startTicker(); } else stopTicker();
+  if (!$('.market-card').hidden) { loadMarket(); startTicker(); } else stopTicker();
 });
 $('#setNotes').addEventListener('change', async e => {
   const err = await setShowNotes(e.target.checked);
@@ -291,9 +291,7 @@ $('#familyBody').addEventListener('keydown', e => {
   if (e.target.id === 'joinCode' && e.key === 'Enter') { e.preventDefault(); $('#joinFamily')?.click(); }
 });
 $('#refreshMarket').onclick = loadMarket;
-$('#openMarketDashboard').onclick = () => window.open('https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd?vsView=Y', '_blank', 'noopener');
-$('#searchStock').onclick = renderStockLinks;
-$('#stockQuery').addEventListener('keydown', e => { if (e.key === 'Enter') renderStockLinks(); });
+$('#tickerRefresh').onclick = refreshTicker;
 $('#dayDialogClose').onclick = closeDayDialog;
 $('#dayDialogAdd').onclick = () => {
   const iso = state.selectedDate;
