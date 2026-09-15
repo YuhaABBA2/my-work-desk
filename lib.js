@@ -335,3 +335,42 @@ export function normalizeWatchlist(v) {
   }
   return out.length ? out : DEFAULT_WATCHLIST;
 }
+
+// ── 노트 종류·첨부 ─────────────────────────────────────────────
+export const NOTE_KINDS = Object.freeze([
+  { key: 'idea', label: '아이디어' },
+  { key: 'memo', label: '메모' },
+  { key: 'meeting', label: '회의록' },
+].map(Object.freeze));
+
+export function kindLabel(kind) {
+  return (NOTE_KINDS.find(k => k.key === kind) || NOTE_KINDS[0]).label;
+}
+
+// 회의록을 새로 만들 때 본문에 미리 넣는 틀. 항목은 사용자 확정(일시·참석자·아젠다·내용).
+export function noteTemplate(kind, todayIso) {
+  if (kind !== 'meeting') return '';
+  return `일시: ${fmtMdDow(todayIso)}\n참석자: \n아젠다: \n내용: \n`;
+}
+
+// 카드 탭 필터. 종류 컬럼이 없던 시절 노트(kind 없음)는 아이디어로 본다.
+export function filterNotesByKind(notes, tab) {
+  if (!tab || tab === 'all') return notes;
+  return notes.filter(n => (n.kind || 'idea') === tab);
+}
+
+export function isImageMime(mime) { return /^image\//.test(String(mime || '')); }
+
+export function fmtBytes(n) {
+  n = Number(n) || 0;
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+// storage 경로에 넣을 파일명. 경로 구분자·와일드카드·제어문자만 치우고 한글·공백·괄호는 둔다.
+export function safeFileName(name) {
+  // 구분자(/ 와 역슬래시)·금지문자 → '_', 앞머리의 점·밑줄은 떼어낸다 ('../..\\evil/x' → 'evil_x').
+  const s = String(name || '').replace(/[\\/:*?"<>|\x00-\x1f]/g, '_').replace(/^[._]+/, '').trim();
+  return (s || 'file').slice(0, 100);
+}
