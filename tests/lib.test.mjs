@@ -417,7 +417,7 @@ test('isImageMime / fmtBytes / safeFileName', () => {
   assert.equal(fmtBytes(4.6 * 1024 * 1024), '4.6 MB');
   assert.equal(safeFileName('회의 사진 (1).JPG'), '회의 사진 (1).JPG');
   assert.equal(safeFileName('../..\\evil/name?.png'), 'evil_name_.png'); // 역슬래시(윈도우 경로)도 구분자로 본다
-  assert.equal(safeFileName('C:\\Users\\WS\\사진.jpg'), 'C_Users_WS_사진.jpg');
+  assert.equal(safeFileName('C:\\Users\\WS\\사진.jpg'), 'C__Users_WS_사진.jpg'); // ':' 와 '\' 각각 '_'
   assert.equal(safeFileName('   '), 'file');
   assert.equal(safeFileName('a'.repeat(150) + '.png').length, 100);
 });
