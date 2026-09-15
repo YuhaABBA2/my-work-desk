@@ -46,6 +46,13 @@
 - 카드: 구성원 목록(만든 계정에 **"가장"** 뱃지), 표시 이름 수정, 가장은 초대 코드 재발급, 구성원은 나가기.
 - 남이 만든 가족 업무는 카드 메타 끝에 작성자 이름 표시.
 
+### 노트 종류·첨부 — 2026-09-15
+
+- `work_notes.kind` = idea|memo|meeting. 카드 "노트"에 탭(전체·아이디어·메모·회의록, `state.noteTab` localStorage). 회의록 새로 만들면 `noteTemplate`(일시·참석자·아젠다·내용) 삽입.
+- 첨부: `work_note_files`(note_id·path·name·mime·size) + 비공개 버킷 `note-files`(10MB, 노트당 10개). **객체 키는 `{uid}/{note_id}/{uuid}.{ext}` ASCII 만** — Storage 가 한글·공백·괄호 키를 Invalid key 로 거부한다(프로덕션에서 확인). 원래 파일명은 행의 `name`.
+- 편집: 파일은 스테이징하고 **저장 시** 업로드(`uploadNoteFile`), ✕는 삭제 예약. 읽기: 서명 URL 1시간(50분 캐시), 이미지 썸네일 → `#imgDialog` 전체 미리보기, 그 외는 새 탭.
+- 노트 삭제 시 스토리지 객체 먼저 `remove` → 행은 cascade. 스펙 `docs/superpowers/specs/2026-09-15-notes-kinds-attachments-design.md`.
+
 ### 아이디어 노트 (제텔카스텐, 본인 전용) — 2026-09-14
 
 - `work_notes`(id, user_id, title, body, updated_at). RLS 본인만. 제목은 계정 안 유일(대소문자·공백 무시), 대괄호 금지.
@@ -99,6 +106,7 @@
 - `projects.js`: `work_projects` CRUD, 이관, 고정 프로젝트
 - `family.js`: 가족 CRUD, `loadFamily` 소급 태그
 - `settings.js`: `work_settings` (show_market, show_notes, market_symbols)
+- `notes.js`/`notes-ui.js`: 노트 CRUD·첨부(note-files 버킷)·탭·미리보기
 - `market.js`: 시세 카드(`pig_price` 실데이터) + 투자 링크 + `sparkline()` 공용
 - `ticker.js`: 투자 지표 실시간 타일·관심 목록 편집 (pig-farm-log `/api/market/*`)
 - `notify.js`: 푸시 구독/해제, VAPID 공개키
