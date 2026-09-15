@@ -8,7 +8,8 @@ import {
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
   filterPigSeries,
-  indexDelta, fmtIndex, krxSearch, normalizeWatchlist, DEFAULT_WATCHLIST
+  indexDelta, fmtIndex, krxSearch, normalizeWatchlist, DEFAULT_WATCHLIST,
+  isStaleRepeat
 } from '../lib.js';
 
 test('parseIso → iso 왕복', () => {
@@ -371,4 +372,14 @@ test('normalizeWatchlist: 저장값 검증·중복 제거·20개 절단·빈 값
   assert.equal(normalizeWatchlist(many).length, 20);
   assert.equal(DEFAULT_WATCHLIST.length, 7);
   assert.equal(DEFAULT_WATCHLIST[0].name, '코스피');
+});
+
+test('isStaleRepeat: 반복 시리즈의 지난 미완료 회차만', () => {
+  const today = '2026-09-15';
+  assert.equal(isStaleRepeat({ seriesId: 's1', done: false, date: '2026-09-06', endDate: null }, today), true);
+  assert.equal(isStaleRepeat({ seriesId: 's1', done: true, date: '2026-09-06', endDate: null }, today), false);   // 완료는 접을 게 없음
+  assert.equal(isStaleRepeat({ seriesId: null, done: false, date: '2026-09-06', endDate: null }, today), false);  // 단발 지난 일은 그대로 "지남"
+  assert.equal(isStaleRepeat({ seriesId: 's1', done: false, date: '2026-09-15', endDate: null }, today), false);  // 오늘 회차
+  assert.equal(isStaleRepeat({ seriesId: 's1', done: false, date: '2026-09-14', endDate: '2026-09-16' }, today), false); // 기간 중
+  assert.equal(isStaleRepeat({ seriesId: 's1', done: false, date: '2026-09-10', endDate: '2026-09-14' }, today), true);
 });

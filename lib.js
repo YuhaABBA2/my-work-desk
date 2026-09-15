@@ -124,6 +124,9 @@ export function mergeProjectNames(local, fromTasks) {
 // 마감일: 종료일이 있으면 종료일, 없으면 시작일.
 export function dueDate(t) { return t.endDate || t.date; }
 export function spansDay(t, dayIso) { return t.date <= dayIso && dayIso <= dueDate(t); }
+// 반복 시리즈의 지난 미완료 회차. 생신처럼 "그날 지나면 끝"인 반복은 완료 체크 없이도 접는다 —
+// 남은 업무 카운트·마감 임박·저녁 "오늘 못 한 일"에서 뺀다. 캘린더·상세엔 "지남" 배지로 그대로 남는다.
+export function isStaleRepeat(t, todayIso) { return !!t.seriesId && !t.done && dueDate(t) < todayIso; }
 export function daysBetween(aIso, bIso) { return Math.round((parseIso(bIso) - parseIso(aIso)) / 86400000); }
 
 // 배지 판정. 'past' 지남 · 'today' 오늘 마감 · 'ongoing' 시작했고 마감 전 · 'soon:N' N일 뒤 마감(≤3) · '' 그 외

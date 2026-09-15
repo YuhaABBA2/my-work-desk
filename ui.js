@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask } from './lib.js';
 import { REACTION_EMOJIS, summarizeReactions } from './reactions.js';
 import { holidayFor, lunarFor } from './holidays.js';
 import { today, state, settings } from './state.js';
@@ -66,7 +66,8 @@ export function render() {
   // "가족과 공유"를 켠 내 업무도 여기 남는다 — 공유는 캘린더 표시일 뿐. 가족 일정 프로젝트는 아래 "가족 일정" 카드로.
   const myId = state.user?.id;
   const personal = state.tasks.filter(t => isPersonalTask(t, myId));
-  const personalOpen = personal.filter(t => !t.done);
+  // 반복 시리즈의 지난 회차는 '남은 일'이 아니다 (2026-09-15) — 카운트·마감 임박·저녁 배너에서 뺀다.
+  const personalOpen = personal.filter(t => !t.done && !isStaleRepeat(t, td));
   const personalDone = personal.filter(t => t.done);
   $('#openCount').textContent = personalOpen.length;
   $('#doneCount').textContent = personalDone.length;
