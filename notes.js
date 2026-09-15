@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { state } from './state.js';
-import { normTitle, renameNoteLinks, isValidNoteTitle, noteBacklinks, safeFileName } from './lib.js';
+import { normTitle, renameNoteLinks, isValidNoteTitle, noteBacklinks, fileExt } from './lib.js';
 
 export const NOTE_BUCKET = 'note-files';
 export const NOTE_FILE_MAX = 10;              // 노트당 첨부 수
@@ -75,9 +75,11 @@ export async function deleteNote(id) {
 }
 
 // ---- 첨부 ----
+// 객체 키는 ASCII 만: Storage 가 한글·공백·괄호 키를 "Invalid key"로 거부한다. 원래 이름은 행(name)에 남긴다.
 function newPath(noteId, file) {
-  const rnd = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())).slice(0, 8);
-  return `${state.user.id}/${noteId}/${rnd}-${safeFileName(file.name)}`;
+  const rnd = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const ext = fileExt(file.name);
+  return `${state.user.id}/${noteId}/${rnd}${ext ? '.' + ext : ''}`;
 }
 
 // 파일 하나 업로드 + 행 기록. 실패하면 Error 를 돌려준다(throw 안 함).

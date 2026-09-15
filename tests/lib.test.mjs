@@ -10,7 +10,7 @@ import {
   filterPigSeries,
   indexDelta, fmtIndex, krxSearch, normalizeWatchlist, DEFAULT_WATCHLIST,
   isStaleRepeat,
-  NOTE_KINDS, kindLabel, noteTemplate, filterNotesByKind, isImageMime, fmtBytes, safeFileName
+  NOTE_KINDS, kindLabel, noteTemplate, filterNotesByKind, isImageMime, fmtBytes, fileExt
 } from '../lib.js';
 
 test('parseIso → iso 왕복', () => {
@@ -407,7 +407,7 @@ test('filterNotesByKind: all 이면 전부, 종류 없는 옛 노트는 idea 취
   assert.deepEqual(filterNotesByKind(notes, 'memo'), []);
 });
 
-test('isImageMime / fmtBytes / safeFileName', () => {
+test('isImageMime / fmtBytes / fileExt', () => {
   assert.equal(isImageMime('image/jpeg'), true);
   assert.equal(isImageMime('application/pdf'), false);
   assert.equal(isImageMime(''), false);
@@ -415,9 +415,11 @@ test('isImageMime / fmtBytes / safeFileName', () => {
   assert.equal(fmtBytes(999), '999 B');
   assert.equal(fmtBytes(12600), '12.3 KB');
   assert.equal(fmtBytes(4.6 * 1024 * 1024), '4.6 MB');
-  assert.equal(safeFileName('회의 사진 (1).JPG'), '회의 사진 (1).JPG');
-  assert.equal(safeFileName('../..\\evil/name?.png'), 'evil_name_.png'); // 역슬래시(윈도우 경로)도 구분자로 본다
-  assert.equal(safeFileName('C:\\Users\\WS\\사진.jpg'), 'C__Users_WS_사진.jpg'); // ':' 와 '\' 각각 '_'
-  assert.equal(safeFileName('   '), 'file');
-  assert.equal(safeFileName('a'.repeat(150) + '.png').length, 100);
+  // 스토리지 키에는 확장자만 (한글·공백·괄호 키는 Supabase가 거부 — 2026-09-15 프로덕션 확인)
+  assert.equal(fileExt('회의 사진 (1).JPG'), 'jpg');
+  assert.equal(fileExt('agenda.txt'), 'txt');
+  assert.equal(fileExt('archive.tar.gz'), 'gz');
+  assert.equal(fileExt('noext'), '');
+  assert.equal(fileExt('weird.한글'), '');
+  assert.equal(fileExt(''), '');
 });
