@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   iso, parseIso, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript,
+  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidayLabel,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
@@ -454,4 +454,38 @@ test('iosWidgetScript: 따옴표가 든 주소도 코드를 깨뜨리지 않는�
 
 test('iosWidgetScript: 자리표시자가 없으면 던진다 (틀린 템플릿으로 조용히 복사하지 않는다)', () => {
   assert.throws(() => iosWidgetScript('const X = 1;', 'https://a'));
+});
+
+const HOL = {
+  '2026-09-24': '추석 연휴', '2026-09-25': '추석', '2026-09-26': '추석 연휴',
+  '2026-09-28': '대체공휴일 (추석)',
+  '2026-10-03': '개천절', '2026-10-05': '대체공휴일 (개천절)',
+  '2027-02-06': '설날 연휴', '2027-02-07': '설날', '2027-02-08': '설날 연휴',
+};
+
+test('shortHolidayName: 괄호와 끝의 연휴를 뗀다', () => {
+  assert.equal(shortHolidayName('추석 연휴'), '추석');
+  assert.equal(shortHolidayName('대체공휴일 (추석)'), '대체공휴일');
+  assert.equal(shortHolidayName('추석·개천절'), '추석·개천절');
+});
+
+test('holidayLabel: 연속된 같은 공휴일은 첫날에만 이름을 쓴다', () => {
+  assert.equal(holidayLabel(HOL, '2026-09-24', false), '추석');
+  assert.equal(holidayLabel(HOL, '2026-09-25', false), '');
+  assert.equal(holidayLabel(HOL, '2026-09-26', false), '');
+});
+
+test('holidayLabel: 하루 비고 이어지는 공휴일·다른 이름은 다시 쓴다', () => {
+  assert.equal(holidayLabel(HOL, '2026-09-28', false), '대체공휴일');   // 27일은 평일
+  assert.equal(holidayLabel(HOL, '2026-10-05', false), '대체공휴일');
+});
+
+test('holidayLabel: 주가 바뀌면(일요일 칸) 다시 쓴다', () => {
+  assert.equal(holidayLabel(HOL, '2027-02-07', true), '설날');   // 일요일 — 새 주 첫 칸
+  assert.equal(holidayLabel(HOL, '2027-02-08', false), '');
+});
+
+test('holidayLabel: 공휴일이 아니면 빈 문자열', () => {
+  assert.equal(holidayLabel(HOL, '2026-09-27', false), '');
+  assert.equal(holidayLabel(undefined, '2026-09-25', true), '');
 });
