@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { state } from './state.js';
-import { normalizeWatchlist, rpcErrorMessage } from './lib.js';
+import { normalizeWatchlist, rpcErrorMessage, iosWidgetScript } from './lib.js';
 
 function defaults() { return { showMarket: false, showNotes: false, watchlist: normalizeWatchlist(null), watchlistCustom: false }; }
 
@@ -65,9 +65,17 @@ function showWidgetToken(token) {
   have.hidden = !token;
 }
 
+// 아이폰 위젯 코드 템플릿. 설정 창을 열 때 미리 받아 둔다 —
+// iOS 사파리는 클릭 뒤 await 를 한 번 거치면 클립보드 쓰기를 막는다.
+let iosTemplate = null;
+
 export async function loadWidgetToken() {
   const { data } = await sb.from('widget_tokens').select('token').maybeSingle();
   showWidgetToken(data?.token || null);
+  if (!iosTemplate) {
+    iosTemplate = await fetch('/widget/ios/home-desk.js', { cache: 'no-store' })
+      .then(r => (r.ok ? r.text() : null)).catch(() => null);
+  }
 }
 
 async function issueWidgetToken() {
@@ -86,17 +94,25 @@ export function bindWidgetCard() {
   document.getElementById('widgetIssue')?.addEventListener('click', issueWidgetToken);
   document.getElementById('widgetReissue')?.addEventListener('click', issueWidgetToken);
   document.getElementById('widgetRevoke')?.addEventListener('click', revokeWidgetToken);
-  document.getElementById('widgetCopy')?.addEventListener('click', async () => {
-    const b = document.getElementById('widgetCopy');
+  document.getElementById('widgetCopy')?.addEventListener('click', (e) => {
     const url = document.getElementById('widgetUrl')?.textContent || '';
-    if (!url || !b) return;
-    try {
-      await navigator.clipboard.writeText(url);
-      const old = b.textContent;
-      b.textContent = '복사됨';
-      setTimeout(() => { b.textContent = old; }, 1500);
-    } catch {
-      alert('복사하지 못했습니다. 주소를 길게 눌러 직접 복사해 주세요.');
-    }
+    if (url) copyWithFeedback(e.currentTarget, url, '복사하지 못했습니다. 주소를 길게 눌러 직접 복사해 주세요.');
   });
+  document.getElementById('widgetIosCopy')?.addEventListener('click', (e) => {
+    const url = document.getElementById('widgetUrl')?.textContent || '';
+    if (!url) return;
+    if (!iosTemplate) { alert('위젯 코드를 아직 못 받았습니다. 설정을 닫았다 다시 열어 주세요.'); return; }
+    copyWithFeedback(e.currentTarget, iosWidgetScript(iosTemplate, url), '복사하지 못했습니다. 다시 한 번 눌러 주세요.');
+  });
+}
+
+async function copyWithFeedback(button, text, failMessage) {
+  try {
+    await navigator.clipboard.writeText(text);
+    const old = button.textContent;
+    button.textContent = '복사됨';
+    setTimeout(() => { button.textContent = old; }, 1500);
+  } catch {
+    alert(failMessage);
+  }
 }

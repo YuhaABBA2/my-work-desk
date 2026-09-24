@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   iso, parseIso, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery,
+  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
@@ -433,4 +433,25 @@ test('dateFromQuery: 제대로 된 d만 통과시킨다', () => {
   assert.equal(dateFromQuery('?d=2026-13-01'), null);   // 13월은 없다
   assert.equal(dateFromQuery('?d=2026-02-30'), null);   // 2월 30일은 없다
   assert.equal(dateFromQuery('?d=2026-9-3'), null);     // 0 채우기 필수
+});
+
+test('iosWidgetScript: 주소를 한 자리에만 끼우고, Scriptable 이 돌릴 수 있는 코드를 낸다', async () => {
+  const { readFileSync } = await import('node:fs');
+  const tpl = readFileSync(new URL('../widget/ios/home-desk.js', import.meta.url), 'utf8');
+  const url = 'https://masan-farm.vercel.app/api/widget?token=abc-DEF_123';
+  const out = iosWidgetScript(tpl, url);
+  assert.ok(out.includes(`const WIDGET_URL = "${url}";`));
+  assert.ok(!out.includes('__WIDGET_URL__'));
+  // Scriptable 은 스크립트를 async 함수로 감싸 돌린다 — top-level await 가 있어도 문법이 맞아야 한다.
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  assert.doesNotThrow(() => new AsyncFunction(out));
+});
+
+test('iosWidgetScript: 따옴표가 든 주소도 코드를 깨뜨리지 않는다', () => {
+  const out = iosWidgetScript('const WIDGET_URL = "__WIDGET_URL__";', 'x"; alert(1); "');
+  assert.equal(out, 'const WIDGET_URL = "x\\"; alert(1); \\"";');
+});
+
+test('iosWidgetScript: 자리표시자가 없으면 던진다 (틀린 템플릿으로 조용히 복사하지 않는다)', () => {
+  assert.throws(() => iosWidgetScript('const X = 1;', 'https://a'));
 });
