@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
-import { iso, isValidFamilyCode, rpcErrorMessage, isPersonalTask } from './lib.js';
+import { iso, isValidFamilyCode, rpcErrorMessage, isPersonalTask, dateFromQuery } from './lib.js';
 import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, applyNotesVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf, openReactionsFor, closeReactionsDialog, refreshOpenDialogs, updateLunarPreview } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { toggleReaction } from './reactions.js';
@@ -146,6 +146,19 @@ async function start() {
   applyMarketVisibility();
   syncShareFamilyForProject();
   if (!$('.market-card').hidden) { loadMarket(); startTicker(); }
+  openDateFromWidget();
+}
+
+// 홈화면 위젯을 누르면 ?d=오늘 로 들어온다. 일정이 다 들어온 뒤 그 날 창을 띄운다.
+function openDateFromWidget() {
+  const d = dateFromQuery(location.search);
+  if (!d) return;
+  state.selectedDate = d;
+  openDayDialog(d);
+  // d 만 지운다 — 새로고침에 다시 뜨지 않게. 다른 파라미터는 남긴다.
+  const url = new URL(location.href);
+  url.searchParams.delete('d');
+  history.replaceState(null, '', url.pathname + url.search + url.hash);
 }
 
 
