@@ -381,3 +381,11 @@ export function dateFromQuery(search) {
   if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
   return iso(parseIso(raw)) === raw ? raw : null;
 }
+
+// 아이폰 위젯(Scriptable) 코드에 내 위젯 주소를 끼운다. 템플릿은 widget/ios/home-desk.js.
+// JSON.stringify 로 넣어 주소에 무엇이 들어 있어도 문자열 밖으로 새지 않는다.
+export function iosWidgetScript(template, widgetUrl) {
+  const slot = '"__WIDGET_URL__"';
+  if (template.split(slot).length !== 2) throw new Error('위젯 코드 템플릿이 올바르지 않습니다');
+  return template.replace(slot, () => JSON.stringify(widgetUrl));
+}
