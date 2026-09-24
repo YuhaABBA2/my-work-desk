@@ -151,6 +151,15 @@
         <p class="hint">알림을 켜면 업무별로 저장한 "1시간 전"·"하루 전" 시점에 이 기기로 알림이 옵니다.</p>
       </div>
       <div class="settings-section">
+        <h3>홈화면 위젯</h3>
+        <div class="settings-row" id="widgetNone"><span>이번 달 달력을 홈화면에</span><button id="widgetIssue" type="button" class="tool">주소 만들기</button></div>
+        <div id="widgetHave" hidden>
+          <code class="widget-url" id="widgetUrl"></code>
+          <div class="settings-row"><button id="widgetCopy" type="button" class="tool">복사</button><span><button id="widgetReissue" type="button" class="text-button">새로 만들기</button><button id="widgetRevoke" type="button" class="text-button">폐기</button></span></div>
+        </div>
+        <p class="hint">이 주소를 아는 사람은 내 달력을 볼 수 있습니다. 새로 만들면 예전 주소는 즉시 막힙니다.</p>
+      </div>
+      <div class="settings-section">
         <h3>프로젝트 (카테고리)</h3>
         <div class="project-add"><input id="newProject" maxlength="50" placeholder="새 카테고리"><button id="addProject" class="tool">추가</button></div>
         <p class="hint">추가한 카테고리는 프로젝트 관리 카드의 칩 목록에 나타납니다. 고정 3개(회사 업무·개인 일정·가족 일정)는 삭제할 수 없습니다.</p>

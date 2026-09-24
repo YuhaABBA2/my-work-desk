@@ -44,3 +44,6 @@ html.dark .kind-badge{background:#1f2a12;color:#a3d977}html.dark .kind-badge.mem
 .img-close{position:fixed;top:12px;right:14px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.15);color:#fff;font-size:28px;line-height:1;cursor:pointer}
 .img-name{position:fixed;bottom:16px;left:0;right:0;text-align:center;color:#ddd;font-size:13px;padding:0 16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:760px){.file-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* 설정 창: .settings-row(flex)·.settings-section(grid)가 [hidden] 을 덮어쓴다 — 노트 창과 같은 방어 */
+.settings-dialog [hidden]{display:none!important}
+.widget-url{display:block;word-break:break-all;font-size:11px;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--muted);margin:6px 0}
