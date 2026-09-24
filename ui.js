@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask, holidayLabel } from './lib.js';
 import { REACTION_EMOJIS, summarizeReactions } from './reactions.js';
 import { holidayFor, lunarFor } from './holidays.js';
 import { today, state, settings } from './state.js';
@@ -263,7 +263,8 @@ export function calendar() {
       const hol = holidayFor(c.iso);
       const lun = lunarFor(c.iso);
       const cls = ['wk-cell', c.other && 'other', c.iso === todayIso && 'today', c.iso === state.selectedDate && 'selected', hol && 'holiday'].filter(Boolean).join(' ');
-      const holChip = hol ? `<span class="wk-hol" title="${esc(hol)}">${esc(hol.replace(/\s*\(.*\)\s*/, '').replace(/\s*연휴$/, ''))}</span>` : '';
+      const holText = holidayLabel(state.holidays, c.iso, ci === 0);
+      const holChip = holText ? `<span class="wk-hol" title="${esc(hol)}">${esc(holText)}</span>` : '';
       const lunChip = lun ? `<span class="wk-lun">${esc(lun)}</span>` : '';
       const more = overflow[ci] > 0 ? `<span class="wk-more">+${overflow[ci]}</span>` : '';
       return `<button class="${cls}" data-date="${c.iso}"><span class="wk-num">${c.n}${lunChip}</span>${holChip}${more}</button>`;
@@ -330,7 +331,8 @@ function renderWeekView() {
     const isoD = iso(d);
     const hol = holidayFor(isoD);
     const cls = ['wv-head', isoD === todayIso && 'today', isoD === state.selectedDate && 'selected', hol && 'holiday'].filter(Boolean).join(' ');
-    const holLabel = hol ? `<span class="wv-hol" title="${esc(hol)}">${esc(hol.replace(/\s*\(.*\)\s*/, '').replace(/\s*연휴$/, ''))}</span>` : '';
+    const holText = holidayLabel(state.holidays, isoD, i === 0);
+    const holLabel = holText ? `<span class="wv-hol" title="${esc(hol)}">${esc(holText)}</span>` : '';
     headCols.push(`<button class="${cls}" data-date="${isoD}"><span class="wv-dow">${WV_DAY_NAMES[i]}</span><span class="wv-num">${d.getDate()}</span>${holLabel}</button>`);
   }
   const headHtml = `<div class="wv-head-row"><div class="wv-head-time"></div>${headCols.join('')}</div>`;
