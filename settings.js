@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { state } from './state.js';
-import { normalizeWatchlist } from './lib.js';
+import { normalizeWatchlist, rpcErrorMessage } from './lib.js';
 
 function defaults() { return { showMarket: false, showNotes: false, watchlist: normalizeWatchlist(null), watchlistCustom: false }; }
 
@@ -44,4 +44,59 @@ export async function setWatchlist(list) {
   state.settings.watchlist = normalizeWatchlist(value);
   state.settings.watchlistCustom = value != null;
   return null;
+}
+
+// ---------- 홈화면 위젯 주소 ----------
+// 위젯은 세션이 없어 주소의 토큰으로만 신원을 확인한다(pig-farm-log /api/widget).
+// 토큰 값은 서버(issue_widget_token)가 고른다. 계정당 1개 — 새로 만들면 옛 주소는 즉시 막힌다.
+const WIDGET_API = 'https://masan-farm.vercel.app/api/widget';
+
+function widgetUrlFor(token) {
+  return `${WIDGET_API}?token=${encodeURIComponent(token)}`;
+}
+
+function showWidgetToken(token) {
+  const none = document.getElementById('widgetNone');
+  const have = document.getElementById('widgetHave');
+  const out = document.getElementById('widgetUrl');
+  if (!none || !have || !out) return;
+  out.textContent = token ? widgetUrlFor(token) : '';
+  none.hidden = !!token;
+  have.hidden = !token;
+}
+
+export async function loadWidgetToken() {
+  const { data } = await sb.from('widget_tokens').select('token').maybeSingle();
+  showWidgetToken(data?.token || null);
+}
+
+async function issueWidgetToken() {
+  const { data, error } = await sb.rpc('issue_widget_token');
+  if (error) { alert(rpcErrorMessage(error)); return; }
+  showWidgetToken(data);
+}
+
+async function revokeWidgetToken() {
+  const { error } = await sb.rpc('revoke_widget_token');
+  if (error) { alert(rpcErrorMessage(error)); return; }
+  showWidgetToken(null);
+}
+
+export function bindWidgetCard() {
+  document.getElementById('widgetIssue')?.addEventListener('click', issueWidgetToken);
+  document.getElementById('widgetReissue')?.addEventListener('click', issueWidgetToken);
+  document.getElementById('widgetRevoke')?.addEventListener('click', revokeWidgetToken);
+  document.getElementById('widgetCopy')?.addEventListener('click', async () => {
+    const b = document.getElementById('widgetCopy');
+    const url = document.getElementById('widgetUrl')?.textContent || '';
+    if (!url || !b) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      const old = b.textContent;
+      b.textContent = '복사됨';
+      setTimeout(() => { b.textContent = old; }, 1500);
+    } catch {
+      alert('복사하지 못했습니다. 주소를 길게 눌러 직접 복사해 주세요.');
+    }
+  });
 }

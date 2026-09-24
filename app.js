@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
-import { iso, isValidFamilyCode, rpcErrorMessage, isPersonalTask } from './lib.js';
+import { iso, isValidFamilyCode, rpcErrorMessage, isPersonalTask, dateFromQuery } from './lib.js';
 import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, applyNotesVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf, openReactionsFor, closeReactionsDialog, refreshOpenDialogs, updateLunarPreview } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { toggleReaction } from './reactions.js';
@@ -11,7 +11,7 @@ import { loadMarket } from './market.js';
 import { startTicker, stopTicker, refreshTicker, openWatchDialog, closeWatchDialog, onWatchQueryInput, onWatchDialogClick, onWatchReset } from './ticker.js';
 import { pushSupported, getPushState, enablePush, disablePush } from './notify.js';
 import { loadFamily, createFamily, joinFamily, leaveFamily, regenerateCode, renameMe, defaultDisplayName } from './family.js';
-import { loadSettings, setShowMarket, setShowNotes } from './settings.js';
+import { loadSettings, setShowMarket, setShowNotes, loadWidgetToken, bindWidgetCard } from './settings.js';
 import { loadNotes } from './notes.js';
 import { renderNotesCard, openNote, openNoteByTitle, goBackNote, closeNoteDialog, onDeleteCurrentNote, setNoteStatus, openNoteEditor, onNoteFormSubmit, cancelNoteEdit, onNoteBodyInput, onNoteBodyKeydown, onMentionClick, currentNoteId, hideMention, setNoteTab, onNoteFilesPicked, onEditFilesClick, onKindChange, openImagePreview, closeImagePreview } from './notes-ui.js';
 
@@ -146,6 +146,19 @@ async function start() {
   applyMarketVisibility();
   syncShareFamilyForProject();
   if (!$('.market-card').hidden) { loadMarket(); startTicker(); }
+  openDateFromWidget();
+}
+
+// 홈화면 위젯을 누르면 ?d=오늘 로 들어온다. 일정이 다 들어온 뒤 그 날 창을 띄운다.
+function openDateFromWidget() {
+  const d = dateFromQuery(location.search);
+  if (!d) return;
+  state.selectedDate = d;
+  openDayDialog(d);
+  // d 만 지운다 — 새로고침에 다시 뜨지 않게. 다른 파라미터는 남긴다.
+  const url = new URL(location.href);
+  url.searchParams.delete('d');
+  history.replaceState(null, '', url.pathname + url.search + url.hash);
 }
 
 
@@ -182,7 +195,7 @@ $('#googleLogin').onclick = async () => {
   if (error) $('#notice').textContent = '로그인을 시작하지 못했습니다. Google 로그인이 활성화됐는지 확인해 주세요.';
 };
 // 프로필 버튼(=계정/설정)
-$('#profileBtn').onclick = () => { refreshPushLabel(); openSettingsDialog(); };
+$('#profileBtn').onclick = () => { refreshPushLabel(); openSettingsDialog(); loadWidgetToken(); };
 $('#closeSettings').onclick = closeSettingsDialog;
 $('#logoutBtn').onclick = async () => { await sb.auth.signOut(); location.reload(); };
 // 설정 다이얼로그의 토글들
@@ -286,6 +299,7 @@ $('#thisMonth').onclick = () => {
 $('#calMonth').onclick = () => { state.calMode = 'month'; localStorage.setItem('calMode', 'month'); calendar(); };
 $('#calWeek').onclick = () => { state.calMode = 'week'; localStorage.setItem('calMode', 'week'); if (!state.weekStart) state.weekStart = weekStartOf(today); calendar(); };
 $('#addProject').onclick = onAddProject;
+bindWidgetCard();
 $('#familyBody').addEventListener('click', handleFamilyAction);
 $('#familyBody').addEventListener('keydown', e => {
   if (e.target.id === 'joinCode' && e.key === 'Enter') { e.preventDefault(); $('#joinFamily')?.click(); }

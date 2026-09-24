@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   iso, parseIso, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd, isPersonalTask,
+  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
@@ -422,4 +422,15 @@ test('isImageMime / fmtBytes / fileExt', () => {
   assert.equal(fileExt('noext'), '');
   assert.equal(fileExt('weird.한글'), '');
   assert.equal(fileExt(''), '');
+});
+
+test('dateFromQuery: 제대로 된 d만 통과시킨다', () => {
+  assert.equal(dateFromQuery('?d=2026-09-23'), '2026-09-23');
+  assert.equal(dateFromQuery('?a=1&d=2026-01-05&b=2'), '2026-01-05');
+  assert.equal(dateFromQuery(''), null);
+  assert.equal(dateFromQuery('?d='), null);
+  assert.equal(dateFromQuery('?d=오늘'), null);
+  assert.equal(dateFromQuery('?d=2026-13-01'), null);   // 13월은 없다
+  assert.equal(dateFromQuery('?d=2026-02-30'), null);   // 2월 30일은 없다
+  assert.equal(dateFromQuery('?d=2026-9-3'), null);     // 0 채우기 필수
 });

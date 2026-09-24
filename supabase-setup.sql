@@ -315,3 +315,53 @@ create policy note_files_insert on storage.objects for insert to authenticated
   with check (bucket_id = 'note-files' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy note_files_delete on storage.objects for delete to authenticated
   using (bucket_id = 'note-files' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ---------- 홈화면 위젯 토큰 (2026-09-24) ----------
+-- 위젯은 로그인 세션이 없다. 이 토큰이 든 주소 하나로만 신원을 확인한다.
+-- 그래서 계정당 1개만 살려두고, 새로 발급하면 옛 것은 즉시 죽는다.
+-- 읽는 쪽은 pig-farm-log /api/widget (service_role).
+create table if not exists public.widget_tokens (
+  token text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  last_used_at timestamptz
+);
+create unique index if not exists widget_tokens_user_idx on public.widget_tokens(user_id);
+
+alter table public.widget_tokens enable row level security;
+
+-- 본인 행만 읽고 지울 수 있다. INSERT/UPDATE는 정책이 없으므로 막힌다
+-- (클라가 토큰 값을 직접 고르면 안 된다 — 발급은 아래 RPC가 한다).
+drop policy if exists widget_tokens_select on public.widget_tokens;
+create policy widget_tokens_select on public.widget_tokens for select to authenticated
+  using (user_id = (select auth.uid()));
+drop policy if exists widget_tokens_delete on public.widget_tokens;
+create policy widget_tokens_delete on public.widget_tokens for delete to authenticated
+  using (user_id = (select auth.uid()));
+
+create or replace function public.issue_widget_token()
+returns text language plpgsql security definer set search_path = public as $$
+declare t text;
+begin
+  if auth.uid() is null then raise exception '로그인이 필요합니다'; end if;
+  -- search_path가 public뿐이라 스키마를 붙인다. Supabase는 pgcrypto를 extensions 에 둔다.
+  t := replace(replace(encode(extensions.gen_random_bytes(32), 'base64'), '+', '-'), '/', '_');
+  t := replace(t, '=', '');
+  delete from widget_tokens where user_id = auth.uid();
+  insert into widget_tokens(token, user_id) values (t, auth.uid());
+  return t;
+end $$;
+
+create or replace function public.revoke_widget_token()
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception '로그인이 필요합니다'; end if;
+  delete from widget_tokens where user_id = auth.uid();
+end $$;
+
+revoke all on function public.issue_widget_token() from public;
+revoke all on function public.revoke_widget_token() from public;
+revoke execute on function public.issue_widget_token() from anon;
+revoke execute on function public.revoke_widget_token() from anon;
+grant execute on function public.issue_widget_token() to authenticated;
+grant execute on function public.revoke_widget_token() to authenticated;
