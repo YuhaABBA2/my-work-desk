@@ -146,12 +146,19 @@ Scriptable(무료) 스크립트 한 개. 토큰 주소로 PNG를 받아 `ListWid
 
 ## 순수 함수 (테스트 대상)
 
+달력을 그리는 주체가 **서버(pig-farm-log)** 이므로 순수 함수도 전부 거기 둔다.
+my-work-desk의 `lib.js`는 **다른 저장소라 import가 불가능**하다 — 옮겨오려 하지 말 것.
+
 | 함수 | 무엇 | 어디 |
 |---|---|---|
-| `monthGrid(year, month)` | 주×7일 칸 배열(그 달에 필요한 5~6주), 앞뒤 달 채움 | `lib.js` |
-| `weekRowIndex(grid, today)` | 이번 주가 몇 번째 행인지 | `lib.js` |
-| `visibleTaskFilter(userId, familyIds)` | 볼 수 있는 일정 조건 | pig-farm-log `lib/` |
-| `cellEntries(tasks, date, max)` | 칸에 넣을 항목 + 넘침 개수 | `lib.js` |
+| `monthGrid(year, month)` | 주×7일 칸 배열, 앞뒤 달 채움. 다음 달로만 찬 마지막 주는 버린다 | pig-farm-log `lib/widget-calendar.ts` |
+| `weekRowIndex(weeks, todayIso)` | 오늘이 몇 번째 주 행인지 (없으면 −1) | 〃 |
+| `cellEntries(tasks, dayIso, max)` | 그 칸에 넣을 항목 + 넘침 개수 | 〃 |
+| `visibleTaskFilter(userId, familyIds)` | 볼 수 있는 일정 조건 | pig-farm-log `lib/widget-visibility.ts` |
+
+⚠️ 앱(`ui.js`의 `calendar()`)은 달력 격자를 **42칸 고정으로 자기 안에서 직접 만든다.**
+이걸 건드리지 않는다 — 돌아가는 화면이고, 위젯은 저장소가 달라 공유할 수도 없다.
+대신 두 곳이 갈라진다는 사실을 여기 적어둔다.
 
 ## 완료 기준
 
@@ -182,10 +189,16 @@ Scriptable(무료) 스크립트 한 개. 토큰 주소로 PNG를 받아 `ListWid
 |---|---|---|
 | my-work-desk | `supabase-setup.sql` | 수정 — `widget_tokens` |
 | my-work-desk | `settings.js`, `ui.js`, `styles.css` | 수정 — 위젯 연결 카드 |
-| my-work-desk | `lib.js`, `tests/lib.test.mjs` | 수정 — 순수 함수 3종 |
-| my-work-desk | `android/**` | 신규 |
-| my-work-desk | `.github/workflows/android.yml` | 신규 |
-| my-work-desk | `widget/ios/home-desk.js` | 신규 |
-| pig-farm-log | `app/api/widget/route.ts` | 신규 |
-| pig-farm-log | `lib/widget-render.ts`, `lib/widget-visibility.ts` | 신규 |
-| pig-farm-log | `public/fonts/*.ttf` | 신규 — 한글 글꼴 |
+| my-work-desk | `app.js` | 수정 — `?d=` 읽어 `openDayDialog` |
+| my-work-desk | `android/**` | 신규 (STEP 3) |
+| my-work-desk | `.github/workflows/android.yml` | 신규 (STEP 3) |
+| my-work-desk | `widget/ios/home-desk.js` | 신규 (STEP 2) |
+| pig-farm-log | `lib/widget-calendar.ts` | 신규 — 달력 순수 함수 |
+| pig-farm-log | `lib/widget-visibility.ts` | 신규 — 가시성 순수 함수 |
+| pig-farm-log | `lib/widget-render.ts` | 신규 — PNG 그리기 |
+| pig-farm-log | `app/api/widget/route.ts` | 신규 — 라우트 |
+| pig-farm-log | `tests/unit/widget-*.test.ts` | 신규 — 유닛테스트 |
+| pig-farm-log | `assets/fonts/*.ttf`, `next.config.js` | 신규 — 한글 글꼴(함수 번들에 싣는다), canvas 외부 패키지 설정 |
+
+`pig-farm-log`는 Node 24 + `npm run test:unit`(`node --test`)로 `.ts`를 직접 돌린다.
+테스트는 `tests/unit/`에, import는 `../../lib/foo.ts`처럼 **확장자까지** 적는다.
