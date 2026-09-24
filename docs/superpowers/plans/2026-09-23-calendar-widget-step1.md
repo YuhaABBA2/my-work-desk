@@ -486,16 +486,22 @@ grant execute on function public.revoke_widget_token() to authenticated;
 
 SQL Editor에서:
 
+> ⚠️ SQL Editor는 postgres 로 돈다 — `auth.uid()`가 null 이라 `issue_widget_token()`을 여기서 부르면
+> "로그인이 필요합니다"로 막힌다(정상). 발급·재발급·폐기의 실제 동작은 Task 7에서 앱으로 확인한다.
+> 여기서는 **구조와 권한**만 본다.
+
 ```sql
-select count(*) from public.widget_tokens;          -- 0 이어야 한다
-select public.issue_widget_token();                 -- 43자 안팎의 문자열이 나온다
-select public.issue_widget_token();                 -- 다시 부르면 다른 값
-select count(*) from public.widget_tokens;          -- 여전히 1 (옛 것이 지워졌다)
-select public.revoke_widget_token();
-select count(*) from public.widget_tokens;          -- 0
+select
+  (select count(*) from public.widget_tokens)                                              as rows_0,
+  (select relrowsecurity from pg_class where oid = 'public.widget_tokens'::regclass)       as rls_on,
+  (select count(*) from pg_policies where tablename = 'widget_tokens')                     as policies_2,
+  has_function_privilege('anon', 'public.issue_widget_token()', 'execute')                 as anon_issue_false,
+  has_function_privilege('authenticated', 'public.issue_widget_token()', 'execute')        as auth_issue_true,
+  (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'extensions' and p.proname = 'gen_random_bytes')                    as pgcrypto_in_ext;
 ```
 
-기대: 주석대로. 특히 **두 번 발급해도 행이 1개**여야 한다.
+기대: `rows_0=0 · rls_on=true · policies_2=2 · anon_issue_false=false · auth_issue_true=true · pgcrypto_in_ext≥1`.
 
 - [ ] **Step 4: 커밋한다**
 
@@ -1069,7 +1075,14 @@ curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:3000/api/widget"
 ```
 기대: `401`
 
-Task 4에서 발급받은 토큰으로 (지수님이 앱에 로그인해 `select public.issue_widget_token();` 로 하나 뽑아둔다):
+시험용 토큰으로 — SQL Editor는 `auth.uid()`가 없으므로 지수님 계정 행을 **직접** 넣고, 끝나면 지운다:
+
+```sql
+insert into public.widget_tokens(token, user_id)
+select 'local-test-' || encode(extensions.gen_random_bytes(12), 'hex'), id
+from auth.users where email = '<지수님 로그인 이메일>' returning token;
+-- 확인이 끝나면: delete from public.widget_tokens where token like 'local-test-%';
+```
 
 ```bash
 curl -s "http://localhost:3000/api/widget?token=<토큰>&w=660&h=520" -o real.png && start real.png
