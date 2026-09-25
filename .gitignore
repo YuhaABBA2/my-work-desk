@@ -1,1 +1,9 @@
 .superpowers/
+
+# 안드로이드 위젯 빌드 산출물
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.p12
+*.jks

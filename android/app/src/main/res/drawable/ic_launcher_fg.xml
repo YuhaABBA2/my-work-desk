@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 흰 달력: 안전 영역(가운데 66dp) 안에 둔다 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 몸통 -->
+    <path android:fillColor="#FFFFFF" android:pathData="M34,38h40a4,4 0,0 1,4 4v30a4,4 0,0 1,-4 4h-40a4,4 0,0 1,-4 -4v-30a4,4 0,0 1,4 -4z" />
+    <!-- 머리띠 -->
+    <path android:fillColor="#d9ebc0" android:pathData="M34,38h40a4,4 0,0 1,4 4v6h-48v-6a4,4 0,0 1,4 -4z" />
+    <!-- 고리 -->
+    <path android:fillColor="#FFFFFF" android:pathData="M41,32h4v10h-4zM63,32h4v10h-4z" />
+    <!-- 이번 주 막대 -->
+    <path android:fillColor="#c44536" android:pathData="M36,56h24v5h-24z" />
+    <path android:fillColor="#2f7a3d" android:pathData="M48,64h24v5h-24z" />
+</vector>

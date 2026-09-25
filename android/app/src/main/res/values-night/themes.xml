@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material">
+        <item name="android:colorPrimary">#6dbb7e</item>
+        <item name="android:colorAccent">#6dbb7e</item>
+    </style>
+    <color name="widget_bg">#191d16</color>
+    <color name="widget_text">#eff3e8</color>
+</resources>
