@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">우리집 달력</string>
+    <string name="widget_desc">우리집 데스크의 이번 달 달력</string>
+    <string name="guide">1. 데스크(사파리·크롬) › 프로필 › 설정 › 홈화면 위젯 › [주소 만들기] › [주소 복사]\n2. 아래 [붙여넣기] › [저장] — 미리보기에 달력이 뜨면 성공\n3. 홈화면 빈 곳을 길게 누르기 › 위젯 › 우리집 달력 을 끌어다 놓기</string>
+    <string name="url_hint">https://masan-farm.vercel.app/api/widget?token=…</string>
+    <string name="paste">붙여넣기</string>
+    <string name="save">저장</string>
+    <string name="loading">달력을 불러오는 중…</string>
+    <string name="saved">저장했어요. 홈화면 위젯도 곧 이 달력으로 바뀝니다.</string>
+    <string name="invalid_url">데스크 설정의 [주소 복사]로 받은 주소가 아니에요. 다시 복사해 붙여넣어 주세요.</string>
+    <string name="revoked">위젯 주소가 바뀌었어요.\n데스크 설정에서 주소를 다시 복사해 이 앱에 붙여넣어 주세요.</string>
+    <string name="need_setup">「우리집 달력」 앱을 열어\n위젯 주소를 붙여넣어 주세요</string>
+    <string name="refresh">새로 고침</string>
+</resources>

@@ -1,0 +1,64 @@
+# 안드로이드 달력 위젯(android/) — 테스트·빌드, main 이면 서명한 APK 를 Release 「android-latest」에 올린다.
+# 서명 키는 비밀값 HOMEDESK_KEYSTORE_B64(PKCS12, base64)·HOMEDESK_KEYSTORE_PASSWORD 에만 있다.
+# 같은 키로 서명해야 폰에서 지우지 않고 업데이트된다 — 키를 바꾸면 앱을 지웠다 다시 깔아야 한다.
+name: Android widget
+
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/android.yml']
+  pull_request:
+    paths: ['android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: 단위 테스트
+        run: gradle --no-daemon testDebugUnitTest
+
+      - name: 서명 키 풀기
+        if: github.event_name != 'pull_request'
+        env:
+          KS: ${{ secrets.HOMEDESK_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/homedesk.p12"
+            echo "HOMEDESK_KEYSTORE=$RUNNER_TEMP/homedesk.p12" >> "$GITHUB_ENV"
+          fi
+
+      - name: APK 빌드
+        env:
+          HOMEDESK_KEYSTORE_PASSWORD: ${{ secrets.HOMEDESK_KEYSTORE_PASSWORD }}
+        run: gradle --no-daemon assembleRelease
+
+      - name: Release 「android-latest」에 올리기
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && env.HOMEDESK_KEYSTORE != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk homedesk-widget.apk
+          if ! gh release view android-latest >/dev/null 2>&1; then
+            gh release create android-latest --latest=false \
+              --title "우리집 달력 위젯 (안드로이드)" \
+              --notes "폰에서 homedesk-widget.apk 를 눌러 내려받아 설치합니다. 처음 한 번 「출처를 알 수 없는 앱 설치」를 허용해야 합니다. 새 버전은 같은 방법으로 덮어 설치하면 됩니다."
+          fi
+          gh release upload android-latest homedesk-widget.apk --clobber
