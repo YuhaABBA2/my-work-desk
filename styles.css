@@ -65,3 +65,8 @@ html.dark .hol-seg{background:#ff8a8024;color:#ff8a80;border-left-color:#ff8a80}
 .card.fold.open .fold-caret{transform:rotate(180deg)}
 /* 넓은 화면 격자에서 접힌 카드가 옆 카드 높이만큼 늘어나 빈 칸이 되지 않게 */
 .card.fold:not(.open){align-self:start}
+/* 화면 탭 — 일정 / 시세·지표. 시세 패널을 켠 사람에게만 보인다 */
+.view-tabs{margin:0 0 14px}
+.view-tabs .cal-tab{min-width:84px}
+.grid[data-view="market"]>article:not(.market-card):not(.investment-card){display:none!important}
+.grid[data-view="desk"]>.market-card,.grid[data-view="desk"]>.investment-card{display:none!important}

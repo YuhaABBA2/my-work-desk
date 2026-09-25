@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   iso, parseIso, addDays, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText, swipeDirection, weekSummaryText, notesSummaryText,
+  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText, swipeDirection, weekSummaryText, notesSummaryText, resolveView,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
@@ -535,4 +535,12 @@ test('notesSummaryText: 개수와 최근 수정 노트', () => {
   ];
   assert.equal(notesSummaryText(notes), '노트 2개 · 최근: 9월 임원회의');
   assert.equal(notesSummaryText([]), '아직 노트가 없습니다');
+});
+
+test('resolveView: 시세를 켠 사람만 기억한 탭, 끈 사람은 늘 일정', () => {
+  assert.equal(resolveView('market', true), 'market');
+  assert.equal(resolveView('desk', true), 'desk');
+  assert.equal(resolveView(null, true), 'desk');       // 처음엔 일정
+  assert.equal(resolveView('엉뚱', true), 'desk');
+  assert.equal(resolveView('market', false), 'desk');  // 시세를 끄면 시세 탭에 갇히지 않는다
 });

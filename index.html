@@ -37,7 +37,10 @@
         </button>
       </div>
     </header>
-    <section class="grid">
+    <nav id="viewTabs" class="cal-tabs view-tabs" role="tablist" hidden>
+      <button type="button" class="cal-tab" role="tab" data-view="desk">일정</button><button type="button" class="cal-tab" role="tab" data-view="market">시세·지표</button>
+    </nav>
+    <section class="grid" id="mainGrid" data-view="desk">
       <article class="card hero-card">
         <div class="card-head">
           <div><h2>오늘 해야 할 일</h2><span class="hint">급한 일부터 차분히 정리합니다.</span></div>
