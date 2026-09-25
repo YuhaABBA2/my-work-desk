@@ -56,3 +56,10 @@ html.dark .hol-seg{background:#ff8a8024;color:#ff8a80;border-left-color:#ff8a80}
 #calendar.slide-next{animation:cal-in-next .22s ease-out}
 #calendar.slide-prev{animation:cal-in-prev .22s ease-out}
 @media (prefers-reduced-motion:reduce){#calendar.slide-next,#calendar.slide-prev{animation:none}}
+/* 접는 카드 (이번주 업무일정·노트) — 기본은 접힘, 제목 줄을 누르면 펼친다. 요약 한 줄은 늘 보인다 */
+.fold-head{display:grid;gap:2px;flex:1;min-width:0;text-align:left;background:transparent;border:0;padding:0;color:inherit;cursor:pointer}
+.fold-head .hint{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fold-caret{display:inline-block;font-size:13px;color:var(--muted);transition:transform .15s}
+.card.fold:not(.open) .fold-body{display:none}
+.card.fold:not(.open) .card-head{margin-bottom:0}
+.card.fold.open .fold-caret{transform:rotate(180deg)}

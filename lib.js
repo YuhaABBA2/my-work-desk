@@ -426,3 +426,19 @@ export function swipeDirection(dx, dy, ms) {
   if (ms > 700 || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return null;
   return dx < 0 ? 'next' : 'prev';
 }
+
+// 접힌 「이번주 업무일정」 카드의 한 줄 요약. tasks 는 카드 목록과 같은 모집단(7일 안 미완료).
+export function weekSummaryText(tasks, todayIso) {
+  if (!tasks.length) return '7일 안에 처리할 일이 없습니다';
+  const next = [...tasks].sort((a, b) => dueDate(a).localeCompare(dueDate(b)))[0];
+  const diff = daysBetween(todayIso, dueDate(next));
+  const when = diff <= 0 ? '오늘' : diff === 1 ? '내일' : diff === 2 ? '모레' : fmtMd(dueDate(next));
+  return `${tasks.length}건 · 가장 가까운 마감: ${next.title} (${when})`;
+}
+
+// 접힌 「노트」 카드의 한 줄 요약 — 개수와 가장 최근에 고친 노트.
+export function notesSummaryText(notes) {
+  if (!notes.length) return '아직 노트가 없습니다';
+  const latest = [...notes].sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')))[0];
+  return `노트 ${notes.length}개 · 최근: ${latest.title}`;
+}

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   iso, parseIso, addDays, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText, swipeDirection,
+  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText, swipeDirection, weekSummaryText, notesSummaryText,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
@@ -517,4 +517,22 @@ test('swipeDirection: 짧게·느리게·비스듬히 민 건 넘기지 않는�
   assert.equal(swipeDirection(-40, 0, 200), null);    // 너무 짧다 — 탭
   assert.equal(swipeDirection(-120, 0, 1200), null);  // 너무 느리다 — 끌기
   assert.equal(swipeDirection(-100, 90, 250), null);  // 세로에 가깝다 — 스크롤
+});
+
+test('weekSummaryText: 건수와 가장 가까운 마감 한 줄', () => {
+  const T = (title, date, endDate) => ({ title, date, endDate: endDate || '' });
+  const tasks = [T('부동산계약', '2026-09-26'), T('한국캐피탈', '2026-09-15', '2026-09-25'), T('노사협의', '2026-09-29')];
+  assert.equal(weekSummaryText(tasks, '2026-09-25'), '3건 · 가장 가까운 마감: 한국캐피탈 (오늘)');
+  assert.equal(weekSummaryText([T('집들이', '2026-09-26')], '2026-09-25'), '1건 · 가장 가까운 마감: 집들이 (내일)');
+  assert.equal(weekSummaryText([T('협의', '2026-09-29')], '2026-09-25'), '1건 · 가장 가까운 마감: 협의 (9/29)');
+  assert.equal(weekSummaryText([], '2026-09-25'), '7일 안에 처리할 일이 없습니다');
+});
+
+test('notesSummaryText: 개수와 최근 수정 노트', () => {
+  const notes = [
+    { title: '옛 메모', updated_at: '2026-09-20T01:00:00Z' },
+    { title: '9월 임원회의', updated_at: '2026-09-24T01:00:00Z' },
+  ];
+  assert.equal(notesSummaryText(notes), '노트 2개 · 최근: 9월 임원회의');
+  assert.equal(notesSummaryText([]), '아직 노트가 없습니다');
 });

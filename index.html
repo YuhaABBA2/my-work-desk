@@ -52,16 +52,18 @@
         <div id="projectChips" class="chips"></div>
         <div id="projectsView" class="project-list"></div>
       </article>
-      <article class="card" id="notesCard">
-        <div class="card-head"><div><h2>노트</h2><span class="hint">아이디어 · 메모 · 회의록</span></div><button id="noteAddBtn" class="tool">＋ 새 노트</button></div>
+      <article class="card fold" id="notesCard" data-fold="notes">
+        <div class="card-head"><button type="button" class="fold-head" aria-expanded="false"><h2>노트 <span class="fold-caret" aria-hidden="true">▾</span></h2><span class="hint" id="notesSummary">아이디어 · 메모 · 회의록</span></button><button id="noteAddBtn" class="tool">＋ 새 노트</button></div>
+        <div class="fold-body">
         <div id="noteStatus" class="status"></div>
         <div id="noteTabs" class="cal-tabs note-tabs" role="tablist"></div>
         <input id="noteSearch" class="note-search" placeholder="노트 검색 (제목·본문)" autocomplete="off">
         <div id="noteList" class="note-list"></div>
+        </div>
       </article>
-      <article class="card">
-        <div class="card-head"><h2>이번주 업무일정</h2><span class="hint">7일 안에 처리할 일</span></div>
-        <div id="weekTasks" class="tasks"></div>
+      <article class="card fold" id="weekCard" data-fold="week">
+        <div class="card-head"><button type="button" class="fold-head" aria-expanded="false"><h2>이번주 업무일정 <span class="fold-caret" aria-hidden="true">▾</span></h2><span class="hint" id="weekSummary">7일 안에 처리할 일</span></button></div>
+        <div class="fold-body"><div id="weekTasks" class="tasks"></div></div>
       </article>
       <article class="card wide market-card" hidden>
         <div class="card-head"><div><h2>축산물 시세</h2><span class="hint">양돈 도매 · 축산물품질평가원</span></div><button id="refreshMarket" class="tool">새로고침</button></div>
