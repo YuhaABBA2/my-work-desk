@@ -65,6 +65,15 @@
         <div class="card-head"><button type="button" class="fold-head" aria-expanded="false"><h2>이번주 업무일정 <span class="fold-caret" aria-hidden="true">▾</span></h2><span class="hint" id="weekSummary">7일 안에 처리할 일</span></button></div>
         <div class="fold-body"><div id="weekTasks" class="tasks"></div></div>
       </article>
+      <article class="card wide">
+        <div class="calendar-header">
+          <div><h2 id="monthLabel"></h2><span class="hint">날짜를 누르면 해당 날짜로 일정이 입력됩니다.</span></div>
+          <div class="cal-tabs" role="tablist"><button id="calMonth" class="cal-tab" role="tab" aria-selected="true">월</button><button id="calWeek" class="cal-tab" role="tab" aria-selected="false">주</button></div><div class="month-nav"><button id="prev" aria-label="이전">‹</button><button id="thisMonth">오늘</button><button id="next" aria-label="다음">›</button></div>
+        </div>
+        <div class="week"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+        <div id="calendar" class="days"></div>
+        <div class="footnote">로그인한 계정의 업무만 표시됩니다.</div>
+      </article>
       <article class="card wide market-card" hidden>
         <div class="card-head"><div><h2>축산물 시세</h2><span class="hint">양돈 도매 · 축산물품질평가원</span></div><button id="refreshMarket" class="tool">새로고침</button></div>
         <div id="marketStatus" class="market-status"></div>
@@ -77,15 +86,6 @@
         </div>
         <div id="tickerStatus" class="market-status">실시간 지표</div>
         <div id="tickerGrid" class="ticker-grid"></div>
-      </article>
-      <article class="card wide">
-        <div class="calendar-header">
-          <div><h2 id="monthLabel"></h2><span class="hint">날짜를 누르면 해당 날짜로 일정이 입력됩니다.</span></div>
-          <div class="cal-tabs" role="tablist"><button id="calMonth" class="cal-tab" role="tab" aria-selected="true">월</button><button id="calWeek" class="cal-tab" role="tab" aria-selected="false">주</button></div><div class="month-nav"><button id="prev" aria-label="이전">‹</button><button id="thisMonth">오늘</button><button id="next" aria-label="다음">›</button></div>
-        </div>
-        <div class="week"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
-        <div id="calendar" class="days"></div>
-        <div class="footnote">로그인한 계정의 업무만 표시됩니다.</div>
       </article>
     </section>
   </main>
