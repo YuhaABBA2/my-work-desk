@@ -50,3 +50,9 @@ html.dark .kind-badge{background:#1f2a12;color:#a3d977}html.dark .kind-badge.mem
 /* 공휴일 막대 (월·주 보기) — 일정 막대와 같은 모양, 붉은 계열 */
 .hol-seg{background:#c4453622;color:#c44536;border-left:3px solid #c44536;cursor:default}
 html.dark .hol-seg{background:#ff8a8024;color:#ff8a80;border-left-color:#ff8a80}
+/* 달력 밀어 넘기기 — 넘어온 쪽에서 살짝 미끄러져 들어온다 */
+@keyframes cal-in-next{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}
+@keyframes cal-in-prev{from{transform:translateX(-24px);opacity:.4}to{transform:none;opacity:1}}
+#calendar.slide-next{animation:cal-in-next .22s ease-out}
+#calendar.slide-prev{animation:cal-in-prev .22s ease-out}
+@media (prefers-reduced-motion:reduce){#calendar.slide-next,#calendar.slide-prev{animation:none}}

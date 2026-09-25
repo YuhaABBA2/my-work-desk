@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   iso, parseIso, addDays, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText,
+  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText, swipeDirection,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
@@ -506,4 +506,15 @@ test('dueBannerText: 이름은 3개까지, 잘린 수는 "외 N건"으로 밝힌
   assert.equal(dueBannerText(['가', '나', '다', '라']), '마감 임박 4건: 가, 나, 다 외 1건');
   assert.equal(dueBannerText(['가', '나', '다']), '마감 임박 3건: 가, 나, 다');
   assert.equal(dueBannerText(['가']), '마감 임박 1건: 가');
+});
+
+test('swipeDirection: 왼쪽으로 밀면 다음, 오른쪽으로 밀면 이전', () => {
+  assert.equal(swipeDirection(-120, 10, 250), 'next');
+  assert.equal(swipeDirection(120, -10, 250), 'prev');
+});
+
+test('swipeDirection: 짧게·느리게·비스듬히 민 건 넘기지 않는다 (탭·세로 스크롤과 헷갈리지 않게)', () => {
+  assert.equal(swipeDirection(-40, 0, 200), null);    // 너무 짧다 — 탭
+  assert.equal(swipeDirection(-120, 0, 1200), null);  // 너무 느리다 — 끌기
+  assert.equal(swipeDirection(-100, 90, 250), null);  // 세로에 가깝다 — 스크롤
 });

@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
-import { iso, isValidFamilyCode, rpcErrorMessage, isPersonalTask, dateFromQuery } from './lib.js';
+import { iso, isValidFamilyCode, rpcErrorMessage, isPersonalTask, dateFromQuery, swipeDirection } from './lib.js';
 import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, applyNotesVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf, openReactionsFor, closeReactionsDialog, refreshOpenDialogs, updateLunarPreview } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { toggleReaction } from './reactions.js';
@@ -291,6 +291,31 @@ $('#next').onclick = () => {
   }
   calendar();
 };
+// 달력을 좌우로 밀어 넘기기 — ‹ › 버튼과 같은 처리(월 보기는 달, 주 보기는 주).
+// 민 직후 손을 뗀 칸이 탭으로 잡혀 일정 창이 열리지 않게, 바로 뒤 click 하나를 삼킨다.
+{
+  const cal = $('#calendar');
+  let start = null, swallowUntil = 0;
+  cal.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    start = e.touches.length === 1 ? { x: t.clientX, y: t.clientY, at: Date.now() } : null;
+  }, { passive: true });
+  cal.addEventListener('touchend', e => {
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dir = swipeDirection(t.clientX - start.x, t.clientY - start.y, Date.now() - start.at);
+    start = null;
+    if (!dir) return;
+    swallowUntil = Date.now() + 400;
+    $(dir === 'next' ? '#next' : '#prev').click();
+    cal.classList.remove('slide-next', 'slide-prev');
+    void cal.offsetWidth; // 애니메이션을 다시 시작시키려고 한 번 그리게 한다
+    cal.classList.add(dir === 'next' ? 'slide-next' : 'slide-prev');
+  }, { passive: true });
+  cal.addEventListener('click', e => {
+    if (Date.now() < swallowUntil) { e.stopPropagation(); e.preventDefault(); }
+  }, true);
+}
 $('#thisMonth').onclick = () => {
   if (state.calMode === 'week') state.weekStart = weekStartOf(today);
   else state.view = new Date(today.getFullYear(), today.getMonth(), 1);
