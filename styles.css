@@ -70,3 +70,11 @@ html.dark .hol-seg{background:#ff8a8024;color:#ff8a80;border-left-color:#ff8a80}
 .view-tabs .cal-tab{min-width:84px}
 .grid[data-view="market"]>article:not(.market-card):not(.investment-card){display:none!important}
 .grid[data-view="desk"]>.market-card,.grid[data-view="desk"]>.investment-card{display:none!important}
+/* 지난 일 목록 — 줄마다 [완료] [오늘로] */
+.alert.overdue-list{display:grid;gap:4px;background:#fdecec;color:#8a2a2a}
+html.dark .alert.overdue-list{background:#3a1a1a;color:#ffb4a8}
+.od-row{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:32px}
+.od-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.od-when{opacity:.7;font-size:12px}
+.od-actions{display:flex;gap:2px;flex:none}
+.od-actions .text-button{padding:4px 8px;color:inherit;font-weight:700}

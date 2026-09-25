@@ -468,3 +468,14 @@ export function calendarUrls(widgetUrl) {
   const https = 'https://masan-farm.vercel.app/api/calendar?token=' + widgetUrl.slice(prefix.length);
   return { https, webcal: https.replace(/^https:/, 'webcal:') };
 }
+
+// 마감 기준으로 나눈다: 지난 일(마감 < 오늘, 오래된 것부터) / 임박(오늘 ≤ 마감 ≤ 오늘+3, 가까운 것부터).
+// 둘을 한 배너에 섞으면 "마감 임박 4건" 에 이미 지난 일이 끼어 헷갈렸다.
+export function splitDue(tasks, todayIso) {
+  const limit = iso(addDays(parseIso(todayIso), 3));
+  const byDue = (a, b) => dueDate(a).localeCompare(dueDate(b));
+  return {
+    overdue: tasks.filter(t => dueDate(t) < todayIso).sort(byDue),
+    soon: tasks.filter(t => dueDate(t) >= todayIso && dueDate(t) <= limit).sort(byDue),
+  };
+}

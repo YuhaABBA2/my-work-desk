@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   iso, parseIso, addDays, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText, swipeDirection, weekSummaryText, notesSummaryText, resolveView, projectsSummaryText, calendarUrls,
+  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText, swipeDirection, weekSummaryText, notesSummaryText, resolveView, projectsSummaryText, calendarUrls, splitDue,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
@@ -561,4 +561,19 @@ test('calendarUrls: 위젯 주소로 캘린더 구독 주소(https·webcal)를 �
   });
   assert.equal(calendarUrls(''), null);
   assert.equal(calendarUrls('https://evil.example/api/widget?token=x'), null);
+});
+
+test('splitDue: 지난 일과 3일 안 마감을 나눈다', () => {
+  const T = (title, date, endDate) => ({ title, date, endDate: endDate || '' });
+  const tasks = [
+    T('지난주', '2026-09-22'),
+    T('기간 진행 중', '2026-09-15', '2026-09-25'),  // 끝이 오늘 — 임박
+    T('내일', '2026-09-26'),
+    T('사흘 뒤', '2026-09-28'),
+    T('나흘 뒤', '2026-09-29'),
+    T('오래전', '2026-09-01'),
+  ];
+  const { overdue, soon } = splitDue(tasks, '2026-09-25');
+  assert.deepEqual(overdue.map(t => t.title), ['오래전', '지난주']);   // 오래된 것부터
+  assert.deepEqual(soon.map(t => t.title), ['기간 진행 중', '내일', '사흘 뒤']);
 });

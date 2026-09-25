@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
-import { iso, isValidFamilyCode, rpcErrorMessage, isPersonalTask, dateFromQuery, swipeDirection } from './lib.js';
+import { iso, isValidFamilyCode, rpcErrorMessage, isPersonalTask, dateFromQuery, swipeDirection, shiftEndDate } from './lib.js';
 import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, applyNotesVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf, openReactionsFor, closeReactionsDialog, refreshOpenDialogs, updateLunarPreview, setView } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { toggleReaction } from './reactions.js';
@@ -75,6 +75,18 @@ async function onSettingsLeaveFamily() {
   closeSettingsDialog();
 }
 
+
+// 지난 일 하나를 오늘로. 기간 일정은 길이를 지킨 채 통째로 옮긴다(shiftEndDate).
+async function moveTaskToToday(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  const td = iso(today);
+  const { error } = await sb.from('work_tasks')
+    .update({ task_date: td, end_date: shiftEndDate(t.date, t.endDate, td), updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) return alert(error.message || '옮기지 못했습니다.');
+  await load();
+}
 
 // 오늘 미완료 개인 업무 전체를 내일로 이동.
 async function pushOverdueToTomorrow() {
@@ -425,6 +437,9 @@ $('#micBtn').onclick = startVoiceInput;
 // 저녁 배너의 "내일로 넘기기" (동적으로 생기므로 위임)
 $('#dueAlerts').addEventListener('click', (e) => {
   if (e.target.id === 'pushToTomorrow') pushOverdueToTomorrow();
+  const od = e.target.closest('[data-od]');
+  if (od?.dataset.od === 'done') toggleTask(od.dataset.id);
+  if (od?.dataset.od === 'today') moveTaskToToday(od.dataset.id);
 });
 $('#reactionsClose').onclick = closeReactionsDialog;
 $('#reactionsPalette').addEventListener('click', async (e) => {
