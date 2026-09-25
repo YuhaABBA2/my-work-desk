@@ -50,4 +50,7 @@ object WidgetUrl {
 
     /** 위젯을 누르면 여는 데스크 주소 — 그 날 창을 바로 연다. */
     fun deskUrl(today: LocalDate): String = "$DESK?d=$today"
+
+    /** 위젯의 ＋ — 데스크가 그 날짜로 일정 추가 창을 연 채 열린다. */
+    fun addUrl(date: LocalDate): String = "$DESK?add=$date"
 }

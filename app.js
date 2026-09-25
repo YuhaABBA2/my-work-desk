@@ -164,14 +164,18 @@ async function start() {
 }
 
 // 홈화면 위젯을 누르면 ?d=오늘 로 들어온다. 일정이 다 들어온 뒤 그 날 창을 띄운다.
+// 위젯의 ＋ 를 누르면 ?add=날짜 로 들어온다 — 그 날짜로 일정 추가 창을 연다.
 function openDateFromWidget() {
-  const d = dateFromQuery(location.search);
-  if (!d) return;
-  state.selectedDate = d;
-  openDayDialog(d);
-  // d 만 지운다 — 새로고침에 다시 뜨지 않게. 다른 파라미터는 남긴다.
+  const add = dateFromQuery(location.search, 'add');
+  const d = add ? null : dateFromQuery(location.search);
+  if (!add && !d) return;
+  state.selectedDate = add || d;
+  if (add) { openTaskDialog('add'); $('#date').value = add; }
+  else openDayDialog(d);
+  // d·add 만 지운다 — 새로고침에 다시 뜨지 않게. 다른 파라미터는 남긴다.
   const url = new URL(location.href);
   url.searchParams.delete('d');
+  url.searchParams.delete('add');
   history.replaceState(null, '', url.pathname + url.search + url.hash);
 }
 

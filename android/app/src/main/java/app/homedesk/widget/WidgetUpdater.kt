@@ -108,7 +108,7 @@ class WidgetUpdater(ctx: Context, params: WorkerParameters) : CoroutineWorker(ct
 
         /**
          * 그림 + 누르는 영역. 달력 칸 → 그 날을 골라 목록을 바꾼다(앱이 열리지 않는다),
-         * 목록 → 데스크를 그 날 창으로, 제목(9월) → 오늘로 돌아가기, ↻ → 새로 고침.
+         * 목록 → 데스크를 그 날 창으로, 제목(9월) → 오늘로 돌아가기, ＋ → 그 날로 일정 추가, ↻ → 새로 고침.
          */
         private fun base(ctx: Context, today: LocalDate, selected: LocalDate?, viewWidthPx: Float): RemoteViews {
             val views = RemoteViews(ctx.packageName, R.layout.widget_calendar)
@@ -120,7 +120,14 @@ class WidgetUpdater(ctx: Context, params: WorkerParameters) : CoroutineWorker(ct
             val pad = (viewWidthPx * WidgetLayout.PAD_X).toInt()
             views.setViewPadding(R.id.grid, pad, 0, pad, 0)
 
-            views.setOnClickPendingIntent(R.id.header, CalendarWidget.selectIntent(ctx, null, 99))
+            // 제목 줄: ＋ → 고른 날(없으면 오늘)로 일정 추가, 나머지 → 오늘로 돌아가기
+            views.setOnClickPendingIntent(R.id.header_today, CalendarWidget.selectIntent(ctx, null, 99))
+            views.setOnClickPendingIntent(R.id.header_rest, CalendarWidget.selectIntent(ctx, null, 98))
+            val add = Intent(Intent.ACTION_VIEW, Uri.parse(WidgetUrl.addUrl(selected ?: today)))
+            views.setOnClickPendingIntent(
+                R.id.header_add,
+                PendingIntent.getActivity(ctx, 2, add, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT),
+            )
             val open = Intent(Intent.ACTION_VIEW, Uri.parse(WidgetUrl.deskUrl(selected ?: today)))
             views.setOnClickPendingIntent(
                 R.id.list,
