@@ -419,3 +419,10 @@ export function dueBannerText(titles) {
   const rest = titles.length - 3;
   return `마감 임박 ${titles.length}건: ${shown}${rest > 0 ? ` 외 ${rest}건` : ''}`;
 }
+
+// 달력 넘기기 제스처. 가로로 충분히(60px) 빨리(0.7초 안) 밀었고 세로보다 확실히(1.5배) 가로면
+// 'next'(왼쪽으로 밂)·'prev'(오른쪽), 아니면 null — 탭·세로 스크롤을 넘기기로 오해하지 않게.
+export function swipeDirection(dx, dy, ms) {
+  if (ms > 700 || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return null;
+  return dx < 0 ? 'next' : 'prev';
+}
