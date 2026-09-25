@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask, holidaySpans, dueBannerText } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask, holidaySpans, dueBannerText, weekSummaryText } from './lib.js';
 import { REACTION_EMOJIS, summarizeReactions } from './reactions.js';
 import { holidayFor, lunarFor } from './holidays.js';
 import { today, state, settings } from './state.js';
@@ -73,7 +73,9 @@ export function render() {
   $('#doneCount').textContent = personalDone.length;
   const personalShown = shown.filter(t => isPersonalTask(t, myId));
   $('#todayTasks').innerHTML = personalShown.filter(t => spansDay(t, td)).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">오늘 등록된 업무가 없습니다.</div>';
-  $('#weekTasks').innerHTML = personalShown.filter(t => !t.done && dueDate(t) >= td && dueDate(t) <= until).sort(sortTasks).map(taskHTML).join('') || '<div class="empty">이번주 업무일정이 없습니다.</div>';
+  const weekList = personalShown.filter(t => !t.done && dueDate(t) >= td && dueDate(t) <= until).sort(sortTasks);
+  $('#weekTasks').innerHTML = weekList.map(taskHTML).join('') || '<div class="empty">이번주 업무일정이 없습니다.</div>';
+  $('#weekSummary').textContent = weekSummaryText(weekList, td); // 접혀 있어도 보이는 한 줄
   const dueSoon = personalOpen.filter(t => dueDate(t) <= iso(addDays(today, 3))).sort(sortTasks);
   const alerts = [];
   if (dueSoon.length) alerts.push(`<div class="alert">${esc(dueBannerText(dueSoon.map(t => t.title)))}</div>`);

@@ -1,6 +1,6 @@
 import { $ } from './ui.js';
 import { state } from './state.js';
-import { iso, esc, searchNotes, noteLinks, noteBacklinks, renderNoteBody, normTitle, fmtMdDow, mentionQuery, applyMention,
+import { iso, esc, notesSummaryText, searchNotes, noteLinks, noteBacklinks, renderNoteBody, normTitle, fmtMdDow, mentionQuery, applyMention,
   NOTE_KINDS, kindLabel, noteTemplate, filterNotesByKind, isImageMime, fmtBytes } from './lib.js';
 import { deleteNote, findNoteByTitle, saveNote, uploadNoteFile, deleteNoteFile, signedUrls, NOTE_FILE_MAX, NOTE_FILE_BYTES } from './notes.js';
 
@@ -36,6 +36,7 @@ function noteItemHTML(n) {
 export function renderNotesCard() {
   renderTabs();
   if (!state.notesReady) { $('#noteList').innerHTML = ''; return; }
+  $('#notesSummary').textContent = notesSummaryText(state.notes); // 접혀 있어도 보이는 한 줄
   const q = $('#noteSearch')?.value || '';
   const list = searchNotes(filterNotesByKind(state.notes, currentTab()), q);
   const shown = q.trim() ? list : list.slice(0, 5);

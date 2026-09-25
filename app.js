@@ -291,6 +291,21 @@ $('#next').onclick = () => {
   }
   calendar();
 };
+// 접는 카드(이번주 업무일정·노트): 기본은 접힘, 제목 줄을 누르면 펼친다.
+// 펼침 상태는 이 기기에만 기억한다 — 저장소를 못 쓰면(사생활 보호 모드 등) 그냥 접힌 채로 시작한다.
+for (const card of document.querySelectorAll('.card.fold')) {
+  const key = `fold:${card.dataset.fold}`;
+  const head = card.querySelector('.fold-head');
+  const set = (open) => { card.classList.toggle('open', open); head.setAttribute('aria-expanded', String(open)); };
+  let saved = false;
+  try { saved = localStorage.getItem(key) === '1'; } catch (_) {}
+  set(saved);
+  head.addEventListener('click', () => {
+    const open = !card.classList.contains('open');
+    set(open);
+    try { localStorage.setItem(key, open ? '1' : '0'); } catch (_) {}
+  });
+}
 // 달력을 좌우로 밀어 넘기기 — ‹ › 버튼과 같은 처리(월 보기는 달, 주 보기는 주).
 // 민 직후 손을 뗀 칸이 탭으로 잡혀 일정 창이 열리지 않게, 바로 뒤 click 하나를 삼킨다.
 {
