@@ -14,8 +14,11 @@
 const WIDGET_URL = "__WIDGET_URL__";
 const DESK_URL = "https://my-work-desk.vercel.app/";
 
-// 위젯 크기(pt). 화면 폭별 애플 규격, 모르는 기종은 비율로 어림한다.
+// 위젯 크기(pt). 화면 폭별, 모르는 기종은 비율로 어림한다.
+// 크기가 틀리면 iOS 가 그림 위아래(또는 좌우)를 잘라내고 누르는 칸도 어긋난다.
+// 440x956(iPhone 17 Pro Max, iOS 26)은 실제 홈화면 스크린샷에서 잰 값 — large 가 거의 정사각형이다.
 const SIZES = {
+  "440x956": { small: [183, 183], medium: [389, 183], large: [389, 390] },
   "430x932": { small: [170, 170], medium: [364, 170], large: [364, 382] },
   "428x926": { small: [170, 170], medium: [364, 170], large: [364, 382] },
   "414x896": { small: [169, 169], medium: [360, 169], large: [360, 379] },
@@ -31,7 +34,8 @@ function widgetSize(family) {
   const w = Math.min(s.width, s.height), h = Math.max(s.width, s.height);
   const known = SIZES[`${Math.round(w)}x${Math.round(h)}`];
   if (known && known[family]) return known[family];
-  const large = [Math.round(w * 0.866), Math.round(w * 0.906)];
+  // iOS 26 의 large 는 화면 폭의 약 88%, 거의 정사각형이었다 (17 Pro Max 실측)
+  const large = [Math.round(w * 0.884), Math.round(w * 0.886)];
   if (family === "medium") return [large[0], Math.round(w * 0.405)];
   if (family === "small") return [Math.round(w * 0.405), Math.round(w * 0.405)];
   return large;
