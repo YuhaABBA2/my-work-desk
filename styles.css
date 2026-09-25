@@ -63,3 +63,5 @@ html.dark .hol-seg{background:#ff8a8024;color:#ff8a80;border-left-color:#ff8a80}
 .card.fold:not(.open) .fold-body{display:none}
 .card.fold:not(.open) .card-head{margin-bottom:0}
 .card.fold.open .fold-caret{transform:rotate(180deg)}
+/* 넓은 화면 격자에서 접힌 카드가 옆 카드 높이만큼 늘어나 빈 칸이 되지 않게 */
+.card.fold:not(.open){align-self:start}
