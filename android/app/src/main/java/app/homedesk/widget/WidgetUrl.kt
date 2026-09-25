@@ -17,9 +17,22 @@ object WidgetUrl {
         return token.isNotEmpty() && token.none { it.isWhitespace() || it == '&' || it == '#' }
     }
 
-    /** 위젯 실제 픽셀 크기·테마를 붙인 그림 주소. */
-    fun imageUrl(saved: String, widthPx: Int, heightPx: Int, dark: Boolean): String =
-        "${saved.trim()}&w=$widthPx&h=$heightPx&theme=${if (dark) "dark" else "light"}"
+    /** 위젯 실제 픽셀 크기·테마(·고른 날)를 붙인 그림 주소. 고른 날이 없으면 서버가 오늘 목록을 그린다. */
+    fun imageUrl(saved: String, widthPx: Int, heightPx: Int, dark: Boolean, selected: LocalDate? = null): String =
+        "${saved.trim()}&w=$widthPx&h=$heightPx&theme=${if (dark) "dark" else "light"}" +
+            (selected?.let { "&sel=$it" } ?: "")
+
+    /**
+     * 그 달 달력 칸의 날짜들(일요일 시작, 주 단위). 서버 monthGrid 와 같은 규칙 —
+     * 다음 달로만 찬 주는 없다. 누르는 영역을 이 순서로 깐다.
+     */
+    fun monthCells(year: Int, month: Int): List<LocalDate> {
+        val first = LocalDate.of(year, month, 1)
+        val lead = first.dayOfWeek.value % 7 // 일요일=0
+        val weeks = (lead + first.lengthOfMonth() + 6) / 7
+        val start = first.minusDays(lead.toLong())
+        return (0 until weeks * 7).map { start.plusDays(it.toLong()) }
+    }
 
     /**
      * 위젯 크기(dp) → 요청할 픽셀 크기. 비율을 지킨 채 서버 한도(1200) 안으로 줄인다.

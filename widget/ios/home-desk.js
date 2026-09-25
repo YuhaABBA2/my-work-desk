@@ -7,7 +7,7 @@
 //   4. 홈화면 길게 누르기 › 왼쪽 위 ＋ › Scriptable › 가장 큰 크기(large) › 위젯 추가
 //   5. 추가된 위젯을 길게 누르기 › 위젯 편집 › Script: 「우리집 달력」
 //
-// 위젯을 누르면 데스크가 오늘 날짜 창을 연 채로 열린다(사파리).
+// 날짜를 누르면 데스크가 그 날 창을 연 채로 열린다(사파리). 아래 목록은 오늘 일정이다.
 // 주소를 새로 만들거나 폐기하면 이 위젯은 멈춘다 — 코드를 다시 복사해 붙여넣는다.
 // 다크모드를 고정하려면 위젯 편집 › Parameter 에 dark 또는 light.
 
@@ -57,6 +57,54 @@ function message(w, text) {
   t.centerAlignText();
 }
 
+// 그림에서 달력 칸이 놓이는 자리(비율). 서버 pig-farm-log lib/widget-layout.ts LAYOUT 과 같은 숫자다.
+const LAYOUT = { padX: 0.04, gridTop: 0.15, gridBottom: 0.62 };
+
+// 이번 달 칸의 날짜들 (일요일 시작, 다음 달로만 찬 주는 없다 — 서버 monthGrid 와 같다)
+function monthCells() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const lead = new Date(y, m, 1).getDay();
+  const weeks = Math.ceil((lead + new Date(y, m + 1, 0).getDate()) / 7);
+  const p = n => String(n).padStart(2, "0");
+  const out = [];
+  for (let i = 0; i < weeks * 7; i++) {
+    const d = new Date(y, m, 1 - lead + i);
+    out.push(`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`);
+  }
+  return out;
+}
+
+// 그림 위에 투명한 칸을 깐다. 날짜를 누르면 데스크가 그 날 창을 연 채로 열린다(사파리).
+// 위젯 안에서 목록을 바꾸는 건 iOS 가 막는다 — 아래 목록은 늘 오늘이다.
+function tapAreas(w, pw, ph) {
+  w.spacing = 0;
+  const today = `${DESK_URL}?d=${todayIso()}`;
+  const block = (parent, width, height, url) => {
+    const s = parent.addStack();
+    s.size = new Size(width, height);
+    s.url = url;
+    s.addSpacer();
+    return s;
+  };
+  block(w, pw, ph * LAYOUT.gridTop, today);
+  const cells = monthCells();
+  const rows = cells.length / 7;
+  const rowH = (ph * (LAYOUT.gridBottom - LAYOUT.gridTop)) / rows;
+  const padX = pw * LAYOUT.padX;
+  const cellW = (pw - padX * 2) / 7;
+  for (let r = 0; r < rows; r++) {
+    const row = w.addStack();
+    row.size = new Size(pw, rowH);
+    row.layoutHorizontally();
+    row.spacing = 0;
+    row.addSpacer(padX);
+    for (let c = 0; c < 7; c++) block(row, cellW, rowH, `${DESK_URL}?d=${cells[r * 7 + c]}`);
+    row.addSpacer(padX);
+  }
+  block(w, pw, ph * (1 - LAYOUT.gridBottom), today);
+}
+
 async function build() {
   const family = config.widgetFamily || "large";
   const [pw, ph] = widgetSize(family);
@@ -87,6 +135,8 @@ async function build() {
       message(w, `달력을 못 불러왔어요 (${code})\n잠시 뒤 다시 그려집니다`);
     } else {
       w.backgroundImage = Image.fromData(data);
+      // small 위젯은 칸별로 누를 수 없다(iOS) — 전체가 오늘로 열린다
+      if (family !== "small") tapAreas(w, pw, ph);
     }
   } catch (e) {
     message(w, "인터넷 연결을 확인해 주세요\n잠시 뒤 다시 그려집니다");

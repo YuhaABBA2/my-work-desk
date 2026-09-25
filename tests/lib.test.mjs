@@ -495,3 +495,9 @@ test('holidaySpans: 공휴일이 없으면 빈 배열', () => {
   assert.deepEqual(holidaySpans(HOL, WEEK('2026-09-13')), []);
   assert.deepEqual(holidaySpans(undefined, WEEK('2026-09-20')), []);
 });
+
+test('아이폰 위젯의 칸 비율은 서버 LAYOUT 과 같다 (pig-farm-log lib/widget-layout.ts)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../widget/ios/home-desk.js', import.meta.url), 'utf8');
+  assert.ok(src.includes('const LAYOUT = { padX: 0.04, gridTop: 0.15, gridBottom: 0.62 };'));
+});
