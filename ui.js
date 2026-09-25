@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask, holidaySpans, dueBannerText, weekSummaryText, resolveView, projectsSummaryText } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask, holidaySpans, dueBannerText, weekSummaryText, resolveView, projectsSummaryText, splitDue } from './lib.js';
 import { REACTION_EMOJIS, summarizeReactions } from './reactions.js';
 import { holidayFor, lunarFor } from './holidays.js';
 import { today, state, settings } from './state.js';
@@ -76,9 +76,16 @@ export function render() {
   const weekList = personalShown.filter(t => !t.done && dueDate(t) >= td && dueDate(t) <= until).sort(sortTasks);
   $('#weekTasks').innerHTML = weekList.map(taskHTML).join('') || '<div class="empty">이번주 업무일정이 없습니다.</div>';
   $('#weekSummary').textContent = weekSummaryText(weekList, td); // 접혀 있어도 보이는 한 줄
-  const dueSoon = personalOpen.filter(t => dueDate(t) <= iso(addDays(today, 3))).sort(sortTasks);
+  const { overdue: pastDue, soon: dueSoon } = splitDue(personalOpen, td);
   const alerts = [];
   if (dueSoon.length) alerts.push(`<div class="alert">${esc(dueBannerText(dueSoon.map(t => t.title)))}</div>`);
+  // 지난 일: 마감이 지났는데 미완료. 줄마다 [완료] [오늘로] — 배너에 섞여 쌓이지 않게 여기서 바로 정리한다.
+  if (pastDue.length) {
+    const rows = pastDue.map(t => `<div class="od-row"><span class="od-title">${esc(t.title)} <span class="od-when">${esc(fmtMd(dueDate(t)))}</span></span>`
+      + `<span class="od-actions"><button type="button" class="text-button" data-od="done" data-id="${esc(t.id)}">완료</button>`
+      + `<button type="button" class="text-button" data-od="today" data-id="${esc(t.id)}">오늘로</button></span></div>`).join('');
+    alerts.push(`<div class="alert overdue-list"><b>지난 일 ${pastDue.length}건</b>${rows}</div>`);
+  }
   // 저녁 배너 (22시~06시): 오늘 미완료 개인 업무를 내일로 넘기기.
   const nowHour = new Date().getHours();
   if (nowHour >= 22 || nowHour < 7) {
