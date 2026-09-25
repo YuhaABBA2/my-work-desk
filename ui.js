@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask, holidaySpans, dueBannerText, weekSummaryText } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask, holidaySpans, dueBannerText, weekSummaryText, resolveView } from './lib.js';
 import { REACTION_EMOJIS, summarizeReactions } from './reactions.js';
 import { holidayFor, lunarFor } from './holidays.js';
 import { today, state, settings } from './state.js';
@@ -145,6 +145,29 @@ export function applyMarketVisibility() {
   const on = !!state.settings.showMarket;
   $('.market-card').hidden = !on;
   $('.investment-card').hidden = !on;
+  applyView();
+}
+
+// 화면 탭(일정 / 시세·지표). 시세·지표는 나만 보는 패널이라 일정 화면과 나눈다.
+// 시세 패널을 끈 사람에게는 탭이 없고 늘 일정 화면이다. 마지막 탭은 이 기기에만 기억한다.
+export function applyView() {
+  const on = !!state.settings.showMarket;
+  let saved = null;
+  try { saved = localStorage.getItem('view'); } catch (_) {}
+  const view = resolveView(saved, on);
+  $('#mainGrid').dataset.view = view;
+  $('#viewTabs').hidden = !on;
+  for (const b of document.querySelectorAll('#viewTabs [data-view]')) {
+    const active = b.dataset.view === view;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-selected', String(active));
+  }
+}
+
+export function setView(view) {
+  try { localStorage.setItem('view', view); } catch (_) {}
+  applyView();
+  window.scrollTo(0, 0);
 }
 
 // 아이디어 노트 카드: 계정 설정 하나로 결정. 기본 꺼짐.

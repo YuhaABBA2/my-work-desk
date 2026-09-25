@@ -442,3 +442,9 @@ export function notesSummaryText(notes) {
   const latest = [...notes].sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')))[0];
   return `노트 ${notes.length}개 · 최근: ${latest.title}`;
 }
+
+// 화면 탭(일정 / 시세·지표). 시세 패널을 끈 사람은 탭이 없으니 늘 일정 —
+// 켰을 때 시세 탭에 있다가 끈 사람이 빈 화면에 갇히지 않게 한다.
+export function resolveView(saved, showMarket) {
+  return showMarket && saved === 'market' ? 'market' : 'desk';
+}
