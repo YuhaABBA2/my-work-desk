@@ -39,7 +39,7 @@ async function onAddProject() {
 }
 
 async function handleFamilyAction(e) {
-  // 가족 카드에는 이제 "만들기 / 참여" 만 남아 있다.
+  // 설정 › 가족: 가족이 없을 때의 "만들기 / 참여".
   const id = e.target.id;
   if (!id) return;
   const name = defaultDisplayName(state.user);
@@ -53,8 +53,10 @@ async function handleFamilyAction(e) {
   else return;
   if (err) return alert(rpcErrorMessage(err));
   await load();
-  renderFamily();
   syncShareFamilyForProject();
+  // 설정 창 안에서 누른 것 — 닫았다 다시 열어 가족 칸을 구성원·이름·초대로 바꾼다
+  closeSettingsDialog();
+  openSettingsDialog();
 }
 
 // 설정 다이얼로그 안의 가족 관련 액션.
@@ -220,7 +222,7 @@ async function shareFamilyCode() {
   const code = state.family?.code; if (!code) return;
   const msg = `우리집 데스크에 초대합니다.
 1) https://my-work-desk.vercel.app 을 열어 Google 로그인
-2) 아래 코드를 "가족" 카드에서 입력
+2) 오른쪽 위 프로필 → 설정 → 가족에서 아래 코드 입력
 
 초대 코드: ${code}`;
   try {

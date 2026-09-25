@@ -97,21 +97,8 @@ export function render() {
   }
   $('#dueAlerts').innerHTML = alerts.join('');
 
-  // 가족 일정 카드: family_id 가 있는 업무만 (spansDay 오늘 또는 이번 주 안 마감).
-  const famBlock = $('#familyTasksBlock');
-  if (famBlock) {
-    if (!state.family) { famBlock.hidden = true; $('#familyTasksCount').textContent = ''; }
-    else {
-      famBlock.hidden = false;
-      // "가족 일정 리스트" = 프로젝트가 정확히 "가족 일정"(또는 "가족일정")인 업무만.
-      // 다른 프로젝트에 붙인 "가족과 공유" 태그는 inform 목적이라 캘린더에만 표시 (여기 안 옴).
-      const famShown = shown.filter(t => isFamilyProject(t.project));
-      const famList = famShown.filter(t => spansDay(t, td) || (!t.done && dueDate(t) >= td && dueDate(t) <= until)).sort(sortTasks);
-      $('#familyTasks').innerHTML = famList.map(taskHTML).join('') || '<div class="empty">"가족 일정" 프로젝트로 새 업무를 만들면 여기 나타납니다.</div>';
-      const famOpen = state.tasks.filter(t => isFamilyProject(t.project) && !t.done).length;
-      $('#familyTasksCount').textContent = famOpen ? `미완료 ${famOpen}` : '';
-    }
-  }
+  // 가족 일정은 달력·프로젝트 관리(가족 일정)에서 본다. 따로 보여주던 「이번주 가족일정」 카드는
+  // 같은 것을 두 번 보여줘 없앴다(2026-09-25). 가족 만들기·참여는 설정 › 가족으로 옮겼다.
 
   renderProjects();
   calendar();
@@ -148,8 +135,7 @@ export function renderFamily() {
   }
   box.innerHTML = `<ul class="members">${f.members.map(m =>
     `<li>${memberAvatar(m)}<span class="m-name">${esc(m.name)}</span>${m.userId === f.ownerId ? ' <span class="badge repeat">가장</span>' : ''}${m.userId === state.user.id ? ' <span class="hint">(나)</span>' : ''}</li>`
-  ).join('')}</ul>
-    <p class="hint">이름 변경·초대 코드·가족 나가기는 프로필 → 설정에서.</p>`;
+  ).join('')}</ul>`;
 }
 
 // 시세·투자 패널: 계정 설정 하나로 결정. (가장 전용 가드와 헤더 토글 버튼은 2026-09-14에 제거)
@@ -553,10 +539,11 @@ export function openSettingsDialog() {
   $('#setDark').checked = !!settings.dark;
   $('#setMarket').checked = !!state.settings.showMarket;
   $('#setNotes').checked = !!state.settings.showNotes;
-  // 가족 섹션: 가족이 있으면 노출. 이름 항상, 초대는 가장만, 나가기는 구성원만.
+  // 가족 섹션: 가족이 없으면 만들기·참여, 있으면 구성원 + 이름·초대(가장만)·나가기(구성원만).
   const famSection = $('#familySection');
   if (famSection) {
-    famSection.hidden = !state.family;
+    renderFamily();
+    $('#familyManage').hidden = !state.family;
     if (state.family) {
       const me = state.family.members.find(m => m.userId === state.user?.id);
       $('#settingsMyName').value = me?.name || '';
