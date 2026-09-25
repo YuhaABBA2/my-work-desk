@@ -499,7 +499,7 @@ test('holidaySpans: 공휴일이 없으면 빈 배열', () => {
 test('아이폰 위젯의 칸 비율은 서버 LAYOUT 과 같다 (pig-farm-log lib/widget-layout.ts)', async () => {
   const { readFileSync } = await import('node:fs');
   const src = readFileSync(new URL('../widget/ios/home-desk.js', import.meta.url), 'utf8');
-  assert.ok(src.includes('const LAYOUT = { padX: 0.04, gridTop: 0.15, gridBottom: 0.62 };'));
+  assert.ok(src.includes('const LAYOUT = { padX: 0.04, gridTop: 0.15, gridBottom: 0.62, addX0: 0.74, addX1: 0.86 };'));
 });
 
 test('dueBannerText: 이름은 3개까지, 잘린 수는 "외 N건"으로 밝힌다', () => {
@@ -576,4 +576,11 @@ test('splitDue: 지난 일과 3일 안 마감을 나눈다', () => {
   const { overdue, soon } = splitDue(tasks, '2026-09-25');
   assert.deepEqual(overdue.map(t => t.title), ['오래전', '지난주']);   // 오래된 것부터
   assert.deepEqual(soon.map(t => t.title), ['기간 진행 중', '내일', '사흘 뒤']);
+});
+
+test('dateFromQuery: 읽을 이름을 받는다 — 위젯 ＋ 는 ?add=날짜', () => {
+  assert.equal(dateFromQuery('?add=2026-09-26', 'add'), '2026-09-26');
+  assert.equal(dateFromQuery('?add=2026-09-26'), null);          // 기본은 d
+  assert.equal(dateFromQuery('?d=2026-09-26', 'add'), null);
+  assert.equal(dateFromQuery('?add=2026-02-30', 'add'), null);
 });

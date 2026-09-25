@@ -376,8 +376,9 @@ export function fileExt(name) {
 }
 
 // 위젯이 ?d=2026-09-23 처럼 날짜를 실어 보낸다. 달력에 없는 날짜(13월·2월 30일)는 통과시키지 않는다.
-export function dateFromQuery(search) {
-  const raw = new URLSearchParams(search || '').get('d');
+// key 로 읽을 이름을 고른다: d(그 날 창) · add(그 날로 일정 추가, 위젯의 ＋).
+export function dateFromQuery(search, key = 'd') {
+  const raw = new URLSearchParams(search || '').get(key);
   if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
   return iso(parseIso(raw)) === raw ? raw : null;
 }

@@ -59,6 +59,12 @@ class WidgetUrlTest {
         assertEquals(0.04f, WidgetLayout.PAD_X)
         assertEquals(0.15f, WidgetLayout.GRID_TOP)
         assertEquals(0.62f, WidgetLayout.GRID_BOTTOM)
+        assertEquals(0.74f, WidgetLayout.ADD_X0)
+        assertEquals(0.86f, WidgetLayout.ADD_X1)
+    }
+
+    @Test fun 더하기는_그_날짜로_추가_창을_연다() {
+        assertEquals("https://my-work-desk.vercel.app/?add=2026-09-26", WidgetUrl.addUrl(LocalDate.of(2026, 9, 26)))
     }
 
     @Test fun 누르면_그_날_창을_여는_데스크_주소() {

@@ -21,11 +21,17 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <FrameLayout
+        <!-- 제목 줄: 오늘로 / ＋(가로 74~86% = LAYOUT.addX0~addX1) / 오늘로(↻ 가 위에 겹친다) -->
+        <LinearLayout
             android:id="@+id/header"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="15" />
+            android:layout_weight="15"
+            android:orientation="horizontal">
+            <FrameLayout android:id="@+id/header_today" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="74" />
+            <FrameLayout android:id="@+id/header_add" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="12" />
+            <FrameLayout android:id="@+id/header_rest" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="14" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/grid"

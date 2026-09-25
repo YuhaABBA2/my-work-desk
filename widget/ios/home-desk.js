@@ -7,7 +7,7 @@
 //   4. 홈화면 길게 누르기 › 왼쪽 위 ＋ › Scriptable › 가장 큰 크기(large) › 위젯 추가
 //   5. 추가된 위젯을 길게 누르기 › 위젯 편집 › Script: 「우리집 달력」
 //
-// 날짜를 누르면 데스크가 그 날 창을 연 채로 열린다(사파리). 아래 목록은 오늘 일정이다.
+// 날짜를 누르면 데스크가 그 날 창을 연 채로 열린다(사파리). ＋ 는 오늘로 일정 추가. 아래 목록은 오늘 일정이다.
 // 주소를 새로 만들거나 폐기하면 이 위젯은 멈춘다 — 코드를 다시 복사해 붙여넣는다.
 // 기본은 어두운 판. 밝게 하려면 위젯 편집 › Parameter 에 light (폰 설정을 따르려면 auto).
 
@@ -64,7 +64,7 @@ function message(w, text) {
 }
 
 // 그림에서 달력 칸이 놓이는 자리(비율). 서버 pig-farm-log lib/widget-layout.ts LAYOUT 과 같은 숫자다.
-const LAYOUT = { padX: 0.04, gridTop: 0.15, gridBottom: 0.62 };
+const LAYOUT = { padX: 0.04, gridTop: 0.15, gridBottom: 0.62, addX0: 0.74, addX1: 0.86 };
 
 // 이번 달 칸의 날짜들 (일요일 시작, 다음 달로만 찬 주는 없다 — 서버 monthGrid 와 같다)
 function monthCells() {
@@ -93,7 +93,14 @@ function tapAreas(w, pw, ph) {
     s.addSpacer();
     return s;
   };
-  block(w, pw, ph * LAYOUT.gridTop, today);
+  // 제목 줄: 오늘 / ＋(그 날로 일정 추가 — 데스크 ?add=) / 오늘
+  const head = w.addStack();
+  head.size = new Size(pw, ph * LAYOUT.gridTop);
+  head.layoutHorizontally();
+  head.spacing = 0;
+  block(head, pw * LAYOUT.addX0, ph * LAYOUT.gridTop, today);
+  block(head, pw * (LAYOUT.addX1 - LAYOUT.addX0), ph * LAYOUT.gridTop, `${DESK_URL}?add=${todayIso()}`);
+  block(head, pw * (1 - LAYOUT.addX1), ph * LAYOUT.gridTop, today);
   const cells = monthCells();
   const rows = cells.length / 7;
   const rowH = (ph * (LAYOUT.gridBottom - LAYOUT.gridTop)) / rows;
