@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask, holidayLabel } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask, holidaySpans } from './lib.js';
 import { REACTION_EMOJIS, summarizeReactions } from './reactions.js';
 import { holidayFor, lunarFor } from './holidays.js';
 import { today, state, settings } from './state.js';
@@ -234,7 +234,8 @@ export function calendar() {
 
   const weekHtml = weeks.map(week => {
     const wkStart = week[0].iso, wkEnd = week[6].iso;
-    const segs = [];
+    // 공휴일 막대가 맨 앞 → 맨 위 줄. 연휴는 막대 하나(추석 추석 추석 → 추석).
+    const segs = holidaySpans(state.holidays, week.map(c => c.iso)).map(h => ({ holiday: h, startCol: h.startCol, endCol: h.endCol }));
     for (const t of sorted) {
       if (dueDate(t) < wkStart) continue;
       if (t.date > wkEnd) continue;
@@ -263,18 +264,19 @@ export function calendar() {
       const hol = holidayFor(c.iso);
       const lun = lunarFor(c.iso);
       const cls = ['wk-cell', c.other && 'other', c.iso === todayIso && 'today', c.iso === state.selectedDate && 'selected', hol && 'holiday'].filter(Boolean).join(' ');
-      const holText = holidayLabel(state.holidays, c.iso, ci === 0);
-      const holChip = holText ? `<span class="wk-hol" title="${esc(hol)}">${esc(holText)}</span>` : '';
       const lunChip = lun ? `<span class="wk-lun">${esc(lun)}</span>` : '';
       const more = overflow[ci] > 0 ? `<span class="wk-more">+${overflow[ci]}</span>` : '';
-      return `<button class="${cls}" data-date="${c.iso}"><span class="wk-num">${c.n}${lunChip}</span>${holChip}${more}</button>`;
+      return `<button class="${cls}" data-date="${c.iso}"${hol ? ` title="${esc(hol)}"` : ''}><span class="wk-num">${c.n}${lunChip}</span>${more}</button>`;
     }).join('');
 
     const segsHtml = segs.filter(s => s.track < MAX_TRACKS).map(s => {
-      const col = projectColor(s.task.project);
       const leftPct = (s.startCol / 7) * 100;
       const widthPct = ((s.endCol - s.startCol + 1) / 7) * 100;
       const top = 22 + s.track * 22;
+      if (s.holiday) {
+        return `<span class="wk-seg hol-seg" style="left:${leftPct.toFixed(3)}%;width:calc(${widthPct.toFixed(3)}% - 4px);top:${top}px" title="${esc(s.holiday.title)}">${esc(s.holiday.label)}</span>`;
+      }
+      const col = projectColor(s.task.project);
       return `<span class="wk-seg" style="left:${leftPct.toFixed(3)}%;width:calc(${widthPct.toFixed(3)}% - 4px);top:${top}px;background:${col}22;color:${col};border-left:3px solid ${col}" title="${esc(s.task.title)}">${esc(s.task.title)}</span>`;
     }).join('');
 
@@ -331,9 +333,7 @@ function renderWeekView() {
     const isoD = iso(d);
     const hol = holidayFor(isoD);
     const cls = ['wv-head', isoD === todayIso && 'today', isoD === state.selectedDate && 'selected', hol && 'holiday'].filter(Boolean).join(' ');
-    const holText = holidayLabel(state.holidays, isoD, i === 0);
-    const holLabel = holText ? `<span class="wv-hol" title="${esc(hol)}">${esc(holText)}</span>` : '';
-    headCols.push(`<button class="${cls}" data-date="${isoD}"><span class="wv-dow">${WV_DAY_NAMES[i]}</span><span class="wv-num">${d.getDate()}</span>${holLabel}</button>`);
+    headCols.push(`<button class="${cls}" data-date="${isoD}"${hol ? ` title="${esc(hol)}"` : ''}><span class="wv-dow">${WV_DAY_NAMES[i]}</span><span class="wv-num">${d.getDate()}</span></button>`);
   }
   const headHtml = `<div class="wv-head-row"><div class="wv-head-time"></div>${headCols.join('')}</div>`;
 
@@ -344,7 +344,9 @@ function renderWeekView() {
     if (spanB !== spanA) return spanB - spanA;
     return sortTasks(a, b);
   });
-  const segs = [];
+  // 공휴일 막대가 맨 앞 → 맨 위 줄 (월 보기와 같다)
+  const weekIsos = Array.from({ length: 7 }, (_, i) => iso(addDays(start, i)));
+  const segs = holidaySpans(state.holidays, weekIsos).map(h => ({ holiday: h, startCol: h.startCol, endCol: h.endCol }));
   for (const t of sortedAllDay) {
     const sCol = Math.max(0, daysBetween(startIso, t.date));
     const eCol = Math.min(6, daysBetween(startIso, dueDate(t)));
@@ -361,10 +363,13 @@ function renderWeekView() {
   const trackCount = tracks.length;
   const stripH = Math.max(trackCount * 22 + 6, 8);
   const stripSegs = segs.map(s => {
-    const c = projectColor(s.task.project);
     const leftPct = (s.startCol / 7) * 100;
     const widthPct = ((s.endCol - s.startCol + 1) / 7) * 100;
     const top = 3 + s.track * 22;
+    if (s.holiday) {
+      return `<span class="wv-seg hol-seg" style="left:calc(${leftPct.toFixed(3)}% + 2px);width:calc(${widthPct.toFixed(3)}% - 4px);top:${top}px" title="${esc(s.holiday.title)}">${esc(s.holiday.label)}</span>`;
+    }
+    const c = projectColor(s.task.project);
     return `<span class="wv-seg" data-task-id="${esc(s.task.id)}" style="left:calc(${leftPct.toFixed(3)}% + 2px);width:calc(${widthPct.toFixed(3)}% - 4px);top:${top}px;background:${c}22;color:${c};border-left:3px solid ${c}" title="${esc(s.task.title)}">${esc(s.task.title)}</span>`;
   }).join('');
   const stripHtml = trackCount

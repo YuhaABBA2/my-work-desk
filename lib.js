@@ -396,13 +396,18 @@ export function shortHolidayName(name) {
   return name.replace(/\s*\(.*\)\s*/, '').replace(/\s*연휴$/, '');
 }
 
-// 칸에 적을 공휴일 이름. 연휴처럼 같은 이름이 이어지면 첫날에만 쓰고(추석 추석 추석 → 추석),
-// 주가 바뀐 첫 칸(weekStart)에는 다시 쓴다 — 그 주만 봐도 무슨 날인지 알게.
-export function holidayLabel(holidays, isoDate, weekStart) {
-  const name = holidays?.[isoDate];
-  if (!name) return '';
-  const short = shortHolidayName(name);
-  if (weekStart) return short;
-  const prev = holidays[iso(addDays(parseIso(isoDate), -1))];
-  return prev && shortHolidayName(prev) === short ? '' : short;
+// 한 주(날짜 7개) 안의 공휴일 막대. 연휴처럼 같은 짧은 이름이 이어진 날들은 막대 하나로 묶는다
+// (추석 추석 추석 → 24~26 막대 하나). 일정 막대와 같은 줄 배치에 맨 앞으로 들어간다.
+// 위젯 서버(pig-farm-log lib/widget-calendar.ts weekSpanItems)도 같은 규칙이다.
+export function holidaySpans(holidays, weekIsos) {
+  const out = [];
+  weekIsos.forEach((d, col) => {
+    const name = holidays?.[d];
+    if (!name) return;
+    const label = shortHolidayName(name);
+    const last = out[out.length - 1];
+    if (last && last.label === label && last.endCol === col - 1) last.endCol = col;
+    else out.push({ label, title: name, startCol: col, endCol: col });
+  });
+  return out;
 }
