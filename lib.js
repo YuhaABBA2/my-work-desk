@@ -411,3 +411,11 @@ export function holidaySpans(holidays, weekIsos) {
   });
   return out;
 }
+
+// 마감 임박 배너 문구. 이름은 3개까지만 쓰고, 잘린 수를 "외 N건"으로 밝힌다
+// (건수만 4건인데 이름이 3개면 하나가 사라진 것처럼 보인다).
+export function dueBannerText(titles) {
+  const shown = titles.slice(0, 3).join(', ');
+  const rest = titles.length - 3;
+  return `마감 임박 ${titles.length}건: ${shown}${rest > 0 ? ` 외 ${rest}건` : ''}`;
+}

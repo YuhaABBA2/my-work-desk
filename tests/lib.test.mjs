@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   iso, parseIso, addDays, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans,
+  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
@@ -500,4 +500,10 @@ test('아이폰 위젯의 칸 비율은 서버 LAYOUT 과 같다 (pig-farm-log l
   const { readFileSync } = await import('node:fs');
   const src = readFileSync(new URL('../widget/ios/home-desk.js', import.meta.url), 'utf8');
   assert.ok(src.includes('const LAYOUT = { padX: 0.04, gridTop: 0.15, gridBottom: 0.62 };'));
+});
+
+test('dueBannerText: 이름은 3개까지, 잘린 수는 "외 N건"으로 밝힌다', () => {
+  assert.equal(dueBannerText(['가', '나', '다', '라']), '마감 임박 4건: 가, 나, 다 외 1건');
+  assert.equal(dueBannerText(['가', '나', '다']), '마감 임박 3건: 가, 나, 다');
+  assert.equal(dueBannerText(['가']), '마감 임박 1건: 가');
 });

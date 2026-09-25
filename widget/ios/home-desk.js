@@ -9,7 +9,7 @@
 //
 // 날짜를 누르면 데스크가 그 날 창을 연 채로 열린다(사파리). 아래 목록은 오늘 일정이다.
 // 주소를 새로 만들거나 폐기하면 이 위젯은 멈춘다 — 코드를 다시 복사해 붙여넣는다.
-// 다크모드를 고정하려면 위젯 편집 › Parameter 에 dark 또는 light.
+// 기본은 어두운 판. 밝게 하려면 위젯 편집 › Parameter 에 light (폰 설정을 따르려면 auto).
 
 const WIDGET_URL = "__WIDGET_URL__";
 const DESK_URL = "https://my-work-desk.vercel.app/";
@@ -51,7 +51,9 @@ function isDark() {
   const p = (args.widgetParameter || "").trim().toLowerCase();
   if (p === "dark") return true;
   if (p === "light") return false;
-  return Device.isUsingDarkAppearance();
+  if (p === "auto") return Device.isUsingDarkAppearance();
+  // 기본은 어둡게 — 위젯 안에서는 Device.isUsingDarkAppearance() 가 다크모드여도 false 를 줄 때가 많다
+  return true;
 }
 
 function message(w, text) {
