@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   iso, parseIso, addDays, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText, swipeDirection, weekSummaryText, notesSummaryText, resolveView, projectsSummaryText,
+  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText, swipeDirection, weekSummaryText, notesSummaryText, resolveView, projectsSummaryText, calendarUrls,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
@@ -551,4 +551,14 @@ test('projectsSummaryText: 이번 달 완료율과 가장 많이 남은 프로�
   assert.equal(projectsSummaryText(tasks), '이번 달 3/6 완료 (50%) · 가장 많이 남음: 회사 업무 2건');
   assert.equal(projectsSummaryText([T('회사 업무', true)]), '이번 달 1/1 완료 (100%) · 남은 일 없음');
   assert.equal(projectsSummaryText([]), '이번 달 마감인 업무가 없습니다');
+});
+
+test('calendarUrls: 위젯 주소로 캘린더 구독 주소(https·webcal)를 만든다', () => {
+  const w = 'https://masan-farm.vercel.app/api/widget?token=abc-DEF_1';
+  assert.deepEqual(calendarUrls(w), {
+    https: 'https://masan-farm.vercel.app/api/calendar?token=abc-DEF_1',
+    webcal: 'webcal://masan-farm.vercel.app/api/calendar?token=abc-DEF_1',
+  });
+  assert.equal(calendarUrls(''), null);
+  assert.equal(calendarUrls('https://evil.example/api/widget?token=x'), null);
 });

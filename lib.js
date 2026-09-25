@@ -459,3 +459,12 @@ export function projectsSummaryText(tasks) {
   const top = Object.entries(left).sort((a, b) => b[1] - a[1])[0];
   return `이번 달 ${done}/${tasks.length} 완료 (${pct}%) · ${top ? `가장 많이 남음: ${top[0]} ${top[1]}건` : '남은 일 없음'}`;
 }
+
+// 캘린더 구독 주소. 위젯과 같은 토큰이라 새로 만들기·폐기하면 함께 막힌다.
+// webcal:// 은 아이폰에서 누르면 바로 구독 창이 뜨고, 구글 캘린더(웹 › URL로 추가)는 https 를 받는다.
+export function calendarUrls(widgetUrl) {
+  const prefix = 'https://masan-farm.vercel.app/api/widget?token=';
+  if (!widgetUrl || !widgetUrl.startsWith(prefix)) return null;
+  const https = 'https://masan-farm.vercel.app/api/calendar?token=' + widgetUrl.slice(prefix.length);
+  return { https, webcal: https.replace(/^https:/, 'webcal:') };
+}

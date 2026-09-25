@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { state } from './state.js';
-import { normalizeWatchlist, rpcErrorMessage, iosWidgetScript } from './lib.js';
+import { normalizeWatchlist, rpcErrorMessage, iosWidgetScript, calendarUrls } from './lib.js';
 
 function defaults() { return { showMarket: false, showNotes: false, watchlist: normalizeWatchlist(null), watchlistCustom: false }; }
 
@@ -61,6 +61,10 @@ function showWidgetToken(token) {
   const out = document.getElementById('widgetUrl');
   if (!none || !have || !out) return;
   out.textContent = token ? widgetUrlFor(token) : '';
+  // 캘린더 구독 링크도 같은 토큰으로 (아이폰은 webcal:// 을 누르면 바로 구독 창)
+  const cal = token ? calendarUrls(widgetUrlFor(token)) : null;
+  const ios = document.getElementById('calSubscribeIos');
+  if (ios) ios.href = cal ? cal.webcal : '#';
   none.hidden = !!token;
   have.hidden = !token;
 }
@@ -97,6 +101,10 @@ export function bindWidgetCard() {
   document.getElementById('widgetCopy')?.addEventListener('click', (e) => {
     const url = document.getElementById('widgetUrl')?.textContent || '';
     if (url) copyWithFeedback(e.currentTarget, url, '복사하지 못했습니다. 주소를 길게 눌러 직접 복사해 주세요.');
+  });
+  document.getElementById('calCopyGoogle')?.addEventListener('click', (e) => {
+    const cal = calendarUrls(document.getElementById('widgetUrl')?.textContent || '');
+    if (cal) copyWithFeedback(e.currentTarget, cal.https, '복사하지 못했습니다. 다시 한 번 눌러 주세요.');
   });
   document.getElementById('widgetIosCopy')?.addEventListener('click', (e) => {
     const url = document.getElementById('widgetUrl')?.textContent || '';
