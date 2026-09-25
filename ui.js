@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask, holidaySpans, dueBannerText, weekSummaryText, resolveView } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask, holidaySpans, dueBannerText, weekSummaryText, resolveView, projectsSummaryText } from './lib.js';
 import { REACTION_EMOJIS, summarizeReactions } from './reactions.js';
 import { holidayFor, lunarFor } from './holidays.js';
 import { today, state, settings } from './state.js';
@@ -187,6 +187,7 @@ export function renderProjects() {
   const y = today.getFullYear(), m = String(today.getMonth() + 1).padStart(2, '0');
   const monthPrefix = `${y}-${m}`;
   const monthTasks = state.tasks.filter(t => dueDate(t).startsWith(monthPrefix));
+  $('#projectsSummary').textContent = projectsSummaryText(monthTasks); // 접혀 있어도 보이는 한 줄
   const groups = {};
   monthTasks.forEach(t => { const p = t.project || '미분류'; (groups[p] ??= []).push(t); });
   $('#projectsView').innerHTML = Object.entries(groups).map(([p, items]) => {

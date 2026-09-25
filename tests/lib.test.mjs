@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   iso, parseIso, addDays, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText, swipeDirection, weekSummaryText, notesSummaryText, resolveView,
+  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText, swipeDirection, weekSummaryText, notesSummaryText, resolveView, projectsSummaryText,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
@@ -543,4 +543,12 @@ test('resolveView: 시세를 켠 사람만 기억한 탭, 끈 사람은 늘 일�
   assert.equal(resolveView(null, true), 'desk');       // 처음엔 일정
   assert.equal(resolveView('엉뚱', true), 'desk');
   assert.equal(resolveView('market', false), 'desk');  // 시세를 끄면 시세 탭에 갇히지 않는다
+});
+
+test('projectsSummaryText: 이번 달 완료율과 가장 많이 남은 프로젝트', () => {
+  const T = (project, done) => ({ project, done });
+  const tasks = [T('회사 업무', true), T('회사 업무', false), T('회사 업무', false), T('개인 일정', false), T('개인 일정', true), T(null, true)];
+  assert.equal(projectsSummaryText(tasks), '이번 달 3/6 완료 (50%) · 가장 많이 남음: 회사 업무 2건');
+  assert.equal(projectsSummaryText([T('회사 업무', true)]), '이번 달 1/1 완료 (100%) · 남은 일 없음');
+  assert.equal(projectsSummaryText([]), '이번 달 마감인 업무가 없습니다');
 });
