@@ -41,19 +41,21 @@ class WidgetUpdater(ctx: Context, params: WorkerParameters) : CoroutineWorker(ct
         val dark = (ctx.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
             Configuration.UI_MODE_NIGHT_YES
         val density = ctx.resources.displayMetrics.density
+        val today = LocalDate.now()
+        val selected = Prefs.selected(ctx, today)
 
         for (id in ids) {
             val opts = mgr.getAppWidgetOptions(id)
             // 세로 화면 기준: 폭은 MIN_WIDTH, 높이는 MAX_HEIGHT 가 실제 크기다.
-            val (w, h) = WidgetUrl.pixelSize(
-                opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH),
-                opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT),
-                density,
-            )
-            val result = withContext(Dispatchers.IO) { CalendarFetch.fetch(WidgetUrl.imageUrl(saved, w, h, dark)) }
+            val widthDp = opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+            val (w, h) = WidgetUrl.pixelSize(widthDp, opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT), density)
+            val result = withContext(Dispatchers.IO) {
+                CalendarFetch.fetch(WidgetUrl.imageUrl(saved, w, h, dark, selected))
+            }
             when (result) {
                 is FetchResult.Ok -> {
-                    val views = base(ctx)
+                    val viewWidthPx = (if (widthDp > 0) widthDp else 320) * density
+                    val views = base(ctx, today, selected, viewWidthPx)
                     views.setImageViewBitmap(R.id.image, result.bitmap)
                     views.setViewVisibility(R.id.image, View.VISIBLE)
                     views.setViewVisibility(R.id.status, View.GONE)
@@ -94,12 +96,34 @@ class WidgetUpdater(ctx: Context, params: WorkerParameters) : CoroutineWorker(ct
             WorkManager.getInstance(ctx).cancelUniqueWork(PERIODIC)
         }
 
-        /** 그림 + 누르면 데스크(그 날 창) + ↻ 버튼. */
-        private fun base(ctx: Context): RemoteViews {
+        private val ROW_IDS = intArrayOf(R.id.row0, R.id.row1, R.id.row2, R.id.row3, R.id.row4, R.id.row5)
+        private val CELL_IDS = intArrayOf(
+            R.id.c0, R.id.c1, R.id.c2, R.id.c3, R.id.c4, R.id.c5, R.id.c6,
+            R.id.c7, R.id.c8, R.id.c9, R.id.c10, R.id.c11, R.id.c12, R.id.c13,
+            R.id.c14, R.id.c15, R.id.c16, R.id.c17, R.id.c18, R.id.c19, R.id.c20,
+            R.id.c21, R.id.c22, R.id.c23, R.id.c24, R.id.c25, R.id.c26, R.id.c27,
+            R.id.c28, R.id.c29, R.id.c30, R.id.c31, R.id.c32, R.id.c33, R.id.c34,
+            R.id.c35, R.id.c36, R.id.c37, R.id.c38, R.id.c39, R.id.c40, R.id.c41,
+        )
+
+        /**
+         * 그림 + 누르는 영역. 달력 칸 → 그 날을 골라 목록을 바꾼다(앱이 열리지 않는다),
+         * 목록 → 데스크를 그 날 창으로, 제목(9월) → 오늘로 돌아가기, ↻ → 새로 고침.
+         */
+        private fun base(ctx: Context, today: LocalDate, selected: LocalDate?, viewWidthPx: Float): RemoteViews {
             val views = RemoteViews(ctx.packageName, R.layout.widget_calendar)
-            val open = Intent(Intent.ACTION_VIEW, Uri.parse(WidgetUrl.deskUrl(LocalDate.now())))
+            val cells = WidgetUrl.monthCells(today.year, today.monthValue)
+            val rows = cells.size / 7
+            ROW_IDS.forEachIndexed { r, rowId -> views.setViewVisibility(rowId, if (r < rows) View.VISIBLE else View.GONE) }
+            cells.forEachIndexed { i, d -> views.setOnClickPendingIntent(CELL_IDS[i], CalendarWidget.selectIntent(ctx, d, 100 + i)) }
+            // 그림의 좌우 여백(LAYOUT.padX)만큼 격자를 안쪽으로 — 칸 폭을 그림과 맞춘다
+            val pad = (viewWidthPx * WidgetLayout.PAD_X).toInt()
+            views.setViewPadding(R.id.grid, pad, 0, pad, 0)
+
+            views.setOnClickPendingIntent(R.id.header, CalendarWidget.selectIntent(ctx, null, 99))
+            val open = Intent(Intent.ACTION_VIEW, Uri.parse(WidgetUrl.deskUrl(selected ?: today)))
             views.setOnClickPendingIntent(
-                R.id.image,
+                R.id.list,
                 PendingIntent.getActivity(ctx, 0, open, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT),
             )
             views.setOnClickPendingIntent(R.id.refresh, CalendarWidget.refreshIntent(ctx))
