@@ -448,3 +448,14 @@ export function notesSummaryText(notes) {
 export function resolveView(saved, showMarket) {
   return showMarket && saved === 'market' ? 'market' : 'desk';
 }
+
+// 접힌 「프로젝트 관리」 카드의 한 줄 요약. tasks 는 카드와 같은 모집단(이번 달 마감 업무).
+export function projectsSummaryText(tasks) {
+  if (!tasks.length) return '이번 달 마감인 업무가 없습니다';
+  const done = tasks.filter(t => t.done).length;
+  const pct = Math.round(done / tasks.length * 100);
+  const left = {};
+  for (const t of tasks) if (!t.done) { const p = t.project || '미분류'; left[p] = (left[p] || 0) + 1; }
+  const top = Object.entries(left).sort((a, b) => b[1] - a[1])[0];
+  return `이번 달 ${done}/${tasks.length} 완료 (${pct}%) · ${top ? `가장 많이 남음: ${top[0]} ${top[1]}건` : '남은 일 없음'}`;
+}
