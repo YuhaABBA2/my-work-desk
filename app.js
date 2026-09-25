@@ -245,7 +245,7 @@ $('#weekTasks').addEventListener('click', handleTaskAction);
 $('#weekTasks').addEventListener('change', handleTaskAction);
 $('#calendar').addEventListener('click', e => {
   // 주간 뷰: 종일/기간 세그먼트 또는 시간 이벤트 클릭 → 편집.
-  const ev = e.target.closest('.wv-event, .wv-seg');
+  const ev = e.target.closest('.wv-event, .wv-seg[data-task-id]');  // 공휴일 막대(.hol-seg)는 일정이 아니라 편집 대상이 아니다
   if (ev) { editTask(ev.dataset.taskId); return; }
   // 주간 뷰: 시간 슬롯 클릭 → 그 시각으로 일정 추가.
   const slot = e.target.closest('.wv-slot');

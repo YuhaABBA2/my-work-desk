@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  iso, parseIso, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
+  iso, parseIso, addDays, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidayLabel,
+  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
@@ -469,23 +469,29 @@ test('shortHolidayName: 괄호와 끝의 연휴를 뗀다', () => {
   assert.equal(shortHolidayName('추석·개천절'), '추석·개천절');
 });
 
-test('holidayLabel: 연속된 같은 공휴일은 첫날에만 이름을 쓴다', () => {
-  assert.equal(holidayLabel(HOL, '2026-09-24', false), '추석');
-  assert.equal(holidayLabel(HOL, '2026-09-25', false), '');
-  assert.equal(holidayLabel(HOL, '2026-09-26', false), '');
+const WEEK = (start) => Array.from({ length: 7 }, (_, i) => iso(addDays(parseIso(start), i)));
+
+test('holidaySpans: 연휴는 막대 하나 — 추석 추석 추석 → 24~26 한 막대', () => {
+  assert.deepEqual(holidaySpans(HOL, WEEK('2026-09-20')), [
+    { label: '추석', title: '추석 연휴', startCol: 4, endCol: 6 },
+  ]);
 });
 
-test('holidayLabel: 하루 비고 이어지는 공휴일·다른 이름은 다시 쓴다', () => {
-  assert.equal(holidayLabel(HOL, '2026-09-28', false), '대체공휴일');   // 27일은 평일
-  assert.equal(holidayLabel(HOL, '2026-10-05', false), '대체공휴일');
+test('holidaySpans: 하루 비고 이어지거나 이름이 다르면 막대를 나눈다', () => {
+  assert.deepEqual(holidaySpans(HOL, WEEK('2026-09-27')).map(s => [s.label, s.startCol, s.endCol]), [
+    ['대체공휴일', 1, 1], ['개천절', 6, 6],
+  ]);
+  assert.deepEqual(holidaySpans(HOL, WEEK('2026-10-04')).map(s => [s.label, s.startCol, s.endCol]), [
+    ['대체공휴일', 1, 1],
+  ]);
 });
 
-test('holidayLabel: 주가 바뀌면(일요일 칸) 다시 쓴다', () => {
-  assert.equal(holidayLabel(HOL, '2027-02-07', true), '설날');   // 일요일 — 새 주 첫 칸
-  assert.equal(holidayLabel(HOL, '2027-02-08', false), '');
+test('holidaySpans: 주를 넘는 연휴는 주마다 잘린다 — 설날(토~월)', () => {
+  assert.deepEqual(holidaySpans(HOL, WEEK('2027-01-31')).map(s => [s.label, s.startCol, s.endCol]), [['설날', 6, 6]]);
+  assert.deepEqual(holidaySpans(HOL, WEEK('2027-02-07')).map(s => [s.label, s.startCol, s.endCol]), [['설날', 0, 1]]);
 });
 
-test('holidayLabel: 공휴일이 아니면 빈 문자열', () => {
-  assert.equal(holidayLabel(HOL, '2026-09-27', false), '');
-  assert.equal(holidayLabel(undefined, '2026-09-25', true), '');
+test('holidaySpans: 공휴일이 없으면 빈 배열', () => {
+  assert.deepEqual(holidaySpans(HOL, WEEK('2026-09-13')), []);
+  assert.deepEqual(holidaySpans(undefined, WEEK('2026-09-20')), []);
 });
