@@ -1,6 +1,7 @@
 import { sb } from './supabase.js';
 import { state, today } from './state.js';
-import { iso, addDays, sortTasks, occurrenceDates, splitSeriesEdit, shiftEndDate, dueDate, familyIdFor } from './lib.js';
+import { iso, addDays, sortTasks, occurrenceDates, splitSeriesEdit, shiftEndDate, dueDate, familyIdFor, daysBetween, parsePrepSteps, prepStepTasks } from './lib.js';
+import { setPrepSteps } from './settings.js';
 import { $, render, resetForm, fillEditForm, askSeriesScope, closeTaskDialog } from './ui.js';
 import { loadReactions } from './reactions.js';
 
@@ -21,7 +22,10 @@ export async function load() {
     remind1h: !!x.remind_1h,
     remind1d: !!x.remind_1d,
     userId: x.user_id,
-    familyId: x.family_id || null
+    familyId: x.family_id || null,
+    leadDays: x.lead_days || null,
+    waitingOn: x.waiting_on || null,
+    bundleId: x.bundle_id || null
   }));
   await loadReactions();
   render();
@@ -42,6 +46,8 @@ function readForm() {
     remind_1h: task_time ? $('#remind1h').checked : false,
     remind_1d: $('#remind1d').checked,
     note: $('#note').value.trim() || null,
+    lead_days: Number($('#leadDays').value) || null,
+    waiting_on: $('#waitingOn').value.trim() || null,
     updated_at: new Date().toISOString()
   };
 }
@@ -70,6 +76,7 @@ export async function saveTask(e) {
     } else {
       const { error } = await sb.from('work_tasks').update(base).eq('id', state.editId);
       if (error) return alert('수정하지 못했습니다.');
+      await moveBundle(current, base.task_date);
     }
     await load();
     closeTaskDialog();
@@ -95,12 +102,46 @@ export async function saveTask(e) {
     remind_1d: base.remind_1d,
     note: base.note,
     family_id: base.family_id,
-    series_id: seriesId
+    series_id: seriesId,
+    lead_days: base.lead_days,
+    waiting_on: base.waiting_on
   }));
+  // 준비 단계 묶음: 반복 없는 일정에만. 본 일정과 단계들이 같은 bundle_id 를 가진다.
+  const steps = repeat === 'none' && $('#prepOn').checked ? parsePrepSteps($('#prepSteps').value) : [];
+  if (steps.length) {
+    const bundleId = crypto.randomUUID();
+    records[0].bundle_id = bundleId;
+    for (const s of prepStepTasks(base.title, base.task_date, steps)) {
+      records.push({
+        user_id: state.user.id, title: s.title, task_date: s.date, end_date: null,
+        priority: base.priority, project: base.project, task_time: null,
+        remind_1h: false, remind_1d: false, note: null, family_id: base.family_id,
+        series_id: null, lead_days: null, waiting_on: null, bundle_id: bundleId,
+      });
+    }
+    setPrepSteps($('#prepSteps').value); // 다음에 다시 채운다 — 실패해도 일정 저장은 막지 않는다
+  }
   const { error } = await sb.from('work_tasks').insert(records);
   if (error) return alert('저장하지 못했습니다. Supabase 테이블 설정을 확인해 주세요.');
   await load();
   closeTaskDialog();
+}
+
+// 준비 단계 묶음의 본 일정(묶음에서 가장 늦은 날) 날짜를 옮겼으면, 단계들도 같은 만큼 옮길지 묻는다.
+async function moveBundle(current, newDate) {
+  if (!current?.bundleId || newDate === current.date) return;
+  const members = state.tasks.filter(t => t.bundleId === current.bundleId && t.id !== current.id);
+  const isMain = members.every(t => t.date <= current.date);
+  if (!isMain || !members.length) return;
+  const delta = daysBetween(current.date, newDate);
+  if (!confirm(`준비 단계 ${members.length}개도 ${delta > 0 ? delta + '일 뒤로' : -delta + '일 앞으로'} 같이 옮길까요?`)) return;
+  for (const t of members) {
+    const d = iso(addDays(new Date(t.date + 'T00:00:00'), delta));
+    const { error } = await sb.from('work_tasks')
+      .update({ task_date: d, end_date: shiftEndDate(t.date, t.endDate, d), updated_at: new Date().toISOString() })
+      .eq('id', t.id);
+    if (error) return alert('준비 단계를 다 옮기지 못했습니다. 새로고침 후 확인해 주세요.');
+  }
 }
 
 export async function toggleTask(id) {

@@ -365,3 +365,17 @@ revoke execute on function public.issue_widget_token() from anon;
 revoke execute on function public.revoke_widget_token() from anon;
 grant execute on function public.issue_widget_token() to authenticated;
 grant execute on function public.revoke_widget_token() to authenticated;
+
+-- ---------- 업무 도우미 (2026-09-26) — 전부 빈 칸 추가, 기존 행·화면에 영향 없음 ----------
+-- 미리 보기 기한: 기한 N일 전부터 "다가오는 기한" 에 띄운다 (계약 갱신 D-30 등)
+alter table public.work_tasks add column if not exists lead_days integer
+  check (lead_days is null or lead_days between 1 and 365);
+-- 회신 대기: 회신을 기다리는 곳(예: 영업1지구). 채워지면 "회신 대기" 로 모이고 기한이 지나면 "재촉"
+alter table public.work_tasks add column if not exists waiting_on text
+  check (waiting_on is null or char_length(waiting_on) <= 60);
+-- 준비 단계 묶음: 본 일정과 준비 단계 일정이 같은 값을 가진다 (본 일정 날짜를 옮기면 같이 옮긴다)
+alter table public.work_tasks add column if not exists bundle_id uuid;
+create index if not exists work_tasks_bundle_idx on public.work_tasks(bundle_id) where bundle_id is not null;
+-- 준비 단계 템플릿(한 줄에 하나: "D-10 요청 메일") — 마지막에 쓴 것을 기억해 다음에 채운다
+alter table public.work_settings add column if not exists prep_steps text
+  check (prep_steps is null or char_length(prep_steps) <= 1000);

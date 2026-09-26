@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   iso, parseIso, addDays, occurrenceDates, repeatLabel, esc, sortTasks, mergeProjectNames, splitSeriesEdit,
   FIXED_PROJECTS, PROJECT_DEFAULTS, projectColor, sortProjects, dueDate, spansDay, daysBetween,
-  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText, swipeDirection, weekSummaryText, notesSummaryText, resolveView, projectsSummaryText, calendarUrls, splitDue,
+  dueState, shiftEndDate, fmtMd, isPersonalTask, dateFromQuery, iosWidgetScript, shortHolidayName, holidaySpans, dueBannerText, swipeDirection, weekSummaryText, notesSummaryText, resolveView, projectsSummaryText, calendarUrls, splitDue, parseQuickAdd, parsePrepSteps, prepStepTasks, upcomingDeadlines, splitWaiting,
   CODE_ALPHABET, familyCodeFrom, isValidFamilyCode, familyIdFor, isFamilyProject, authorLabel, rpcErrorMessage,
   normTitle, noteLinks, noteBacklinks, renameNoteLinks, isValidNoteTitle,
   mentionQuery, applyMention, searchNotes, renderNoteBody, fmtMdDow,
@@ -583,4 +583,90 @@ test('dateFromQuery: 읽을 이름을 받는다 — 위젯 ＋ 는 ?add=날짜',
   assert.equal(dateFromQuery('?add=2026-09-26'), null);          // 기본은 d
   assert.equal(dateFromQuery('?d=2026-09-26', 'add'), null);
   assert.equal(dateFromQuery('?add=2026-02-30', 'add'), null);
+});
+
+// ---------- 한 줄 빠른 입력 ----------
+// 기준일 2026-09-25 (금)
+const Q = (s) => parseQuickAdd(s, '2026-09-25');
+
+test('parseQuickAdd: 다음주 요일 + 시(오후 추정) + 제목', () => {
+  assert.deepEqual(Q('다음주 화 3시 노사협의'), { title: '노사협의', date: '2026-09-29', time: '15:00' });
+});
+
+test('parseQuickAdd: 내일·오전·반', () => {
+  assert.deepEqual(Q('내일 오전 10시 반 치과'), { title: '치과', date: '2026-09-26', time: '10:30' });
+});
+
+test('parseQuickAdd: 모레·글피·오늘', () => {
+  assert.equal(Q('모레 보고').date, '2026-09-27');
+  assert.equal(Q('글피 보고').date, '2026-09-28');
+  assert.equal(Q('오늘 보고').date, '2026-09-25');
+});
+
+test('parseQuickAdd: 월/일, 몇월 며칠, 며칠(지났으면 다음 달)', () => {
+  assert.deepEqual(Q('10/2 밀양 출장'), { title: '밀양 출장', date: '2026-10-02', time: null });
+  assert.deepEqual(Q('9월 30일 14:30 임원회의'), { title: '임원회의', date: '2026-09-30', time: '14:30' });
+  assert.equal(Q('29일 부동산 잔금').date, '2026-09-29');
+  assert.equal(Q('3일 보고').date, '2026-10-03');
+});
+
+test('parseQuickAdd: 요일만 — 오늘이 그 요일이면 오늘, 아니면 다가오는 날', () => {
+  assert.deepEqual(Q('금요일 저녁 7시 회식'), { title: '회식', date: '2026-09-25', time: '19:00' });
+  assert.equal(Q('월 주간회의').date, '2026-09-28');
+  assert.equal(Q('이번주 목 정리').date, '2026-09-24'); // 이번 주(월~일)의 목요일
+});
+
+test('parseQuickAdd: 날짜가 없으면 오늘, 시각이 없으면 null', () => {
+  assert.deepEqual(Q('장보기'), { title: '장보기', date: '2026-09-25', time: null });
+  assert.deepEqual(Q('  '), { title: '', date: '2026-09-25', time: null });
+});
+
+test('parseQuickAdd: 24시간·분 표기', () => {
+  assert.equal(Q('내일 15:05 통화').time, '15:05');
+  assert.equal(Q('내일 9시 20분 통화').time, '09:20');
+  assert.equal(Q('내일 12시 점심').time, '12:00');
+});
+
+// ---------- 준비 단계 묶음 ----------
+test('parsePrepSteps: "D-10 이름" / "10일 전 이름", 잘못된 줄은 건너뛴다', () => {
+  assert.deepEqual(parsePrepSteps('D-10 요청 메일\n 7일 전 자료 수집 \n\n그냥 메모\nD-3 회의자료 작성'), [
+    { days: 10, name: '요청 메일' }, { days: 7, name: '자료 수집' }, { days: 3, name: '회의자료 작성' },
+  ]);
+});
+
+test('prepStepTasks: 본 일정 날짜에서 거꾸로 센 준비 일정', () => {
+  const steps = [{ days: 10, name: '요청 메일' }, { days: 3, name: '회의자료 작성' }];
+  assert.deepEqual(prepStepTasks('임원회의', '2026-10-15', steps), [
+    { title: '요청 메일 · 임원회의', date: '2026-10-05' },
+    { title: '회의자료 작성 · 임원회의', date: '2026-10-12' },
+  ]);
+});
+
+// ---------- 미리 보기 기한 ----------
+test('upcomingDeadlines: 미리 보기 기간 안(임박 3일보다 앞)만, 가까운 것부터 D-n', () => {
+  const T = (title, date, leadDays, done = false) => ({ title, date, endDate: '', leadDays, done });
+  const tasks = [
+    T('계약 갱신', '2026-10-25', 30),   // D-30 → 보인다
+    T('보험 만기', '2026-10-02', 7),    // D-7 → 보인다
+    T('먼 갱신', '2026-12-01', 30),     // D-67 → 아직
+    T('임박', '2026-09-27', 30),        // D-2 → 마감 임박이 맡는다
+    T('끝남', '2026-10-01', 30, true),
+    T('기한 없음', '2026-10-01', null),
+  ];
+  assert.deepEqual(upcomingDeadlines(tasks, '2026-09-25').map(x => `${x.task.title} D-${x.daysLeft}`), ['보험 만기 D-7', '계약 갱신 D-30']);
+});
+
+// ---------- 회신 대기 ----------
+test('splitWaiting: 회신 대기와 재촉할 것(마감이 오늘이거나 지남)', () => {
+  const T = (title, date, waitingOn, done = false) => ({ title, date, endDate: '', waitingOn, done });
+  const tasks = [
+    T('자료 회신', '2026-09-28', '영업1지구'),
+    T('견적 회신', '2026-09-24', '구매팀'),
+    T('오늘까지', '2026-09-25', '재무팀'),
+    T('받음', '2026-09-20', '총무', true),
+    T('일반 일', '2026-09-20', null),
+  ];
+  const { waiting, nudge } = splitWaiting(tasks, '2026-09-25');
+  assert.deepEqual(waiting.map(t => t.title), ['자료 회신']);
+  assert.deepEqual(nudge.map(t => t.title), ['견적 회신', '오늘까지']);
 });

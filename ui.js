@@ -1,4 +1,4 @@
-import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask, holidaySpans, dueBannerText, weekSummaryText, resolveView, projectsSummaryText, splitDue } from './lib.js';
+import { iso, addDays, esc, pri, sortTasks, isStaleRepeat, projectColor, FIXED_PROJECTS, dueDate, spansDay, dueState, fmtMd, authorLabel, isFamilyProject, daysBetween, isPersonalTask, holidaySpans, dueBannerText, weekSummaryText, resolveView, projectsSummaryText, splitDue, upcomingDeadlines, splitWaiting } from './lib.js';
 import { REACTION_EMOJIS, summarizeReactions } from './reactions.js';
 import { holidayFor, lunarFor } from './holidays.js';
 import { today, state, settings } from './state.js';
@@ -48,6 +48,7 @@ function taskHTML(t) {
     <div class="task-side">
       ${dueInfo(t)}
       ${t.seriesId ? '<span class="badge repeat">반복</span>' : ''}
+      ${t.waitingOn ? `<span class="badge waiting" title="회신 기다리는 곳">대기 · ${esc(t.waitingOn)}</span>` : ''}
       ${remindBadge(t)}
       <span class="badge ${t.priority}">${pri(t.priority)}</span>
       ${reactBtn}
@@ -76,9 +77,22 @@ export function render() {
   const weekList = personalShown.filter(t => !t.done && dueDate(t) >= td && dueDate(t) <= until).sort(sortTasks);
   $('#weekTasks').innerHTML = weekList.map(taskHTML).join('') || '<div class="empty">이번주 업무일정이 없습니다.</div>';
   $('#weekSummary').textContent = weekSummaryText(weekList, td); // 접혀 있어도 보이는 한 줄
-  const { overdue: pastDue, soon: dueSoon } = splitDue(personalOpen, td);
+  // 회신 대기는 따로 모은다 — 지난 일·임박에 섞이면 "내가 할 일" 과 "남이 줄 것" 이 구분되지 않는다.
+  const { overdue: pastDue, soon: dueSoon } = splitDue(personalOpen.filter(t => !t.waitingOn), td);
   const alerts = [];
   if (dueSoon.length) alerts.push(`<div class="alert">${esc(dueBannerText(dueSoon.map(t => t.title)))}</div>`);
+  // 다가오는 기한: 미리 보기(lead_days)를 건 일 — 계약 갱신 D-30 같은 것
+  const upcoming = upcomingDeadlines(personalOpen, td);
+  if (upcoming.length) {
+    alerts.push(`<div class="alert upcoming"><b>다가오는 기한</b> ${upcoming.map(x => `<span class="up-item">${esc(x.task.title)} <b>D-${x.daysLeft}</b></span>`).join(' · ')}</div>`);
+  }
+  // 회신 대기: 기다리는 곳 · 제목 (기한). 기한이 오늘이거나 지났으면 "재촉".
+  const { waiting, nudge } = splitWaiting(personalOpen, td);
+  if (waiting.length || nudge.length) {
+    const row = (t, late) => `<div class="od-row${late ? ' late' : ''}"><span class="od-title">${late ? '<b>재촉</b> ' : ''}${esc(t.waitingOn)} · ${esc(t.title)} <span class="od-when">${esc(fmtMd(dueDate(t)))}까지</span></span>`
+      + `<span class="od-actions"><button type="button" class="text-button" data-od="done" data-id="${esc(t.id)}">받음</button></span></div>`;
+    alerts.push(`<div class="alert waiting-list"><b>회신 대기 ${waiting.length + nudge.length}건</b>${nudge.map(t => row(t, true)).join('')}${waiting.map(t => row(t, false)).join('')}</div>`);
+  }
   // 지난 일: 마감이 지났는데 미완료. 줄마다 [완료] [오늘로] — 배너에 섞여 쌓이지 않게 여기서 바로 정리한다.
   if (pastDue.length) {
     const rows = pastDue.map(t => `<div class="od-row"><span class="od-title">${esc(t.title)} <span class="od-when">${esc(fmtMd(dueDate(t)))}</span></span>`
@@ -462,6 +476,12 @@ export function resetForm() {
   $('#repeatCount').value = 1;
   if ($('#repeatBack')) $('#repeatBack').value = 0;
   if ($('#isLunar')) $('#isLunar').checked = false;
+  $('#leadDays').value = '';
+  $('#waitingOn').value = '';
+  $('#prepBlock').hidden = false;
+  $('#prepOn').checked = false;
+  $('#prepSteps').hidden = true;
+  $('#prepSteps').value = state.settings?.prepSteps || 'D-10 요청 메일\nD-7 자료 수집\nD-3 회의자료 작성';
   setAllDay(false);
   renderProjectOptions(undefined);
   setShareFamily(false, false);
@@ -538,6 +558,9 @@ export function fillEditForm(t) {
   $('#remind1d').checked = !!t.remind1d;
   setShareFamily(!!t.familyId, isFamilyProject(t.project));
   $('#note').value = t.note || '';
+  $('#leadDays').value = t.leadDays ? String(t.leadDays) : '';
+  $('#waitingOn').value = t.waitingOn || '';
+  $('#prepBlock').hidden = true; // 준비 단계는 새로 만들 때만
   $('#repeat').value = 'none';
   $('#repeat').disabled = true;
   $('#repeatCount').disabled = true;

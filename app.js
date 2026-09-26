@@ -1,6 +1,6 @@
 import { sb } from './supabase.js';
 import { state, settings, today } from './state.js';
-import { iso, isValidFamilyCode, rpcErrorMessage, isPersonalTask, dateFromQuery, swipeDirection, shiftEndDate } from './lib.js';
+import { iso, isValidFamilyCode, rpcErrorMessage, isPersonalTask, dateFromQuery, swipeDirection, shiftEndDate, parseQuickAdd } from './lib.js';
 import { $, render, calendar, resetForm, selectDate, renderProjects, setProjectStatus, setAllDay, renderFamily, applyMarketVisibility, applyNotesVisibility, setFamilyStatus, setShareFamily, syncShareFamilyForProject, openTaskDialog, closeTaskDialog, openSettingsDialog, closeSettingsDialog, renderProfile, openDayDialog, closeDayDialog, openProjectDialog, closeProjectDialog, openSearchDialog, closeSearchDialog, renderSearchResults, weekStartOf, openReactionsFor, closeReactionsDialog, refreshOpenDialogs, updateLunarPreview, setView } from './ui.js';
 import { load, saveTask, toggleTask, editTask, removeTask } from './tasks.js';
 import { toggleReaction } from './reactions.js';
@@ -307,6 +307,22 @@ $('#next').onclick = () => {
   }
   calendar();
 };
+// 빠른 입력: 한 줄을 읽어 추가 창을 채워 연다 — 저장은 사람이 확인하고 누른다.
+$('#quickAdd').addEventListener('submit', e => {
+  e.preventDefault();
+  const text = $('#quickInput').value;
+  if (!text.trim()) return;
+  const q = parseQuickAdd(text, iso(today));
+  state.selectedDate = q.date;
+  openTaskDialog('add');
+  $('#title').value = q.title;
+  $('#date').value = q.date;
+  if (q.time) { setAllDay(false); $('#time').value = q.time; }
+  $('#quickInput').value = '';
+});
+// 준비 단계 칸은 체크했을 때만 펼친다
+$('#prepOn').addEventListener('change', e => { $('#prepSteps').hidden = !e.target.checked; });
+
 // 화면 탭: 일정 / 시세·지표
 $('#viewTabs').addEventListener('click', e => {
   const b = e.target.closest('[data-view]');
