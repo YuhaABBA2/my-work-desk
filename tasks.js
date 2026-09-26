@@ -107,11 +107,14 @@ export async function saveTask(e) {
     waiting_on: base.waiting_on
   }));
   // 준비 단계 묶음: 반복 없는 일정에만. 본 일정과 단계들이 같은 bundle_id 를 가진다.
-  const steps = repeat === 'none' && $('#prepOn').checked ? parsePrepSteps($('#prepSteps').value) : [];
-  if (steps.length) {
+  // 오늘보다 이른 단계는 만들지 않는다(만들자마자 "지난 일" 이 되니까) — 남는 단계가 있을 때만 묶는다.
+  const prepOn = repeat === 'none' && $('#prepOn').checked;
+  const stepTasks = prepOn ? prepStepTasks(base.title, base.task_date, parsePrepSteps($('#prepSteps').value), iso(today)) : [];
+  if (prepOn) setPrepSteps($('#prepSteps').value); // 다음에 다시 채운다 — 실패해도 일정 저장은 막지 않는다
+  if (stepTasks.length) {
     const bundleId = crypto.randomUUID();
     records[0].bundle_id = bundleId;
-    for (const s of prepStepTasks(base.title, base.task_date, steps)) {
+    for (const s of stepTasks) {
       records.push({
         user_id: state.user.id, title: s.title, task_date: s.date, end_date: null,
         priority: base.priority, project: base.project, task_time: null,
@@ -119,7 +122,6 @@ export async function saveTask(e) {
         series_id: null, lead_days: null, waiting_on: null, bundle_id: bundleId,
       });
     }
-    setPrepSteps($('#prepSteps').value); // 다음에 다시 채운다 — 실패해도 일정 저장은 막지 않는다
   }
   const { error } = await sb.from('work_tasks').insert(records);
   if (error) return alert('저장하지 못했습니다. Supabase 테이블 설정을 확인해 주세요.');

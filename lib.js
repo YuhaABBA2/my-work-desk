@@ -550,8 +550,11 @@ export function parsePrepSteps(text) {
 }
 
 // 본 일정 날짜에서 거꾸로 센 준비 일정들. 제목은 "단계 · 본 일정".
-export function prepStepTasks(title, dateIso, steps) {
-  return steps.map(s => ({ title: `${s.name} · ${title}`, date: iso(addDays(parseIso(dateIso), -s.days)) }));
+// todayIso 를 주면 오늘보다 이른 단계는 뺀다 — 회의가 가까우면 앞 단계는 이미 지나 만들자마자 "지난 일" 이 된다.
+export function prepStepTasks(title, dateIso, steps, todayIso = '') {
+  return steps
+    .map(s => ({ title: `${s.name} · ${title}`, date: iso(addDays(parseIso(dateIso), -s.days)) }))
+    .filter(t => t.date >= todayIso);
 }
 
 // ---------- 미리 보기 기한 ----------
