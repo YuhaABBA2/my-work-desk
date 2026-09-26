@@ -676,3 +676,20 @@ test('prepStepTasks: 오늘보다 이른 준비 단계는 만들지 않는다 (�
   assert.deepEqual(prepStepTasks('노사협의', '2026-09-29', steps, '2026-09-26').map(t => t.title), ['회의자료 작성 · 노사협의']);
   assert.equal(prepStepTasks('노사협의', '2026-09-29', steps).length, 3); // 기준일을 안 주면 전부
 });
+
+// 2026-09-25~26: 새 칸(lead_days·waiting_on)을 수정 허용 목록(컬럼 단위 grant)에 안 넣어 모든 일정 수정이
+// "permission denied for table work_tasks" 로 거절됐다. 수정 저장이 보내는 칸은 전부 허용 목록에 있어야 한다.
+test('일정 수정이 보내는 칸은 모두 work_tasks 수정 허용 목록(grant update)에 있다', async () => {
+  const { readFileSync } = await import('node:fs');
+  const sql = readFileSync(new URL('../supabase-setup.sql', import.meta.url), 'utf8');
+  const granted = new Set();
+  for (const m of sql.matchAll(/grant update \(([^)]+)\)\s+on public\.work_tasks to authenticated/g)) {
+    for (const c of m[1].split(',')) granted.add(c.trim());
+  }
+  const tasksJs = readFileSync(new URL('../tasks.js', import.meta.url), 'utf8');
+  const body = tasksJs.slice(tasksJs.indexOf('function readForm()'), tasksJs.indexOf('export async function saveTask'));
+  const sent = [...body.matchAll(/^\s{4}(\w+):/gm)].map(m => m[1]);
+  assert.ok(sent.length >= 10, `readForm 칸을 못 읽었다: ${sent}`);
+  const missing = sent.filter(c => !granted.has(c));
+  assert.deepEqual(missing, [], `수정 허용 목록에 없는 칸: ${missing.join(', ')} — supabase-setup.sql 에 grant update 를 더하고 운영 DB 에도 적용할 것`);
+});

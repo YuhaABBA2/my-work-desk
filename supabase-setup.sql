@@ -379,3 +379,7 @@ create index if not exists work_tasks_bundle_idx on public.work_tasks(bundle_id)
 -- 준비 단계 템플릿(한 줄에 하나: "D-10 요청 메일") — 마지막에 쓴 것을 기억해 다음에 채운다
 alter table public.work_settings add column if not exists prep_steps text
   check (prep_steps is null or char_length(prep_steps) <= 1000);
+-- ⚠️ work_tasks 는 컬럼 단위 UPDATE 권한이다(user_id 고정, 위 "2)" 참고). 새 칸을 만들면 여기에 더해야
+-- 수정 저장이 된다 — 빠뜨려 2026-09-25~26 모든 일정 수정이 "permission denied" 로 거절됐다.
+-- bundle_id 는 앱이 만들 때만 넣고 고치지 않으므로 일부러 주지 않는다.
+grant update (lead_days, waiting_on) on public.work_tasks to authenticated;
