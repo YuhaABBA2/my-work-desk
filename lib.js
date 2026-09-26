@@ -480,3 +480,94 @@ export function splitDue(tasks, todayIso) {
     soon: tasks.filter(t => dueDate(t) >= todayIso && dueDate(t) <= limit).sort(byDue),
   };
 }
+
+// ---------- 한 줄 빠른 입력 ----------
+// "다음주 화 3시 노사협의" → { title: '노사협의', date: '2026-09-29', time: '15:00' }.
+// 저장하지 않고 추가 창을 채우기만 한다 — 잘못 읽어도 사람이 보고 고친다.
+// 주는 월요일 시작. 오전·오후 없이 1~6시는 오후로 본다(업무 일정 기준).
+export function parseQuickAdd(text, todayIso) {
+  let s = ` ${String(text || '')} `.replace(/\s+/g, ' ');
+  const today = parseIso(todayIso);
+  const DOWS = '일월화수목금토';
+  let date = null, time = null;
+  const take = (re, fn) => {
+    const m = s.match(re);
+    if (!m || fn(m) === false) return;
+    s = s.replace(m[0], ' ');
+  };
+  const monthDay = (mo, d, year = today.getFullYear()) => {
+    const cand = `${year}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    if (iso(parseIso(cand)) !== cand) return null; // 13월·2월 30일 같은 날은 없다
+    return cand < todayIso && year === today.getFullYear() ? monthDay(mo, d, year + 1) : cand;
+  };
+
+  take(/\s(오늘|내일|모레|글피)\s/, m => { date = iso(addDays(today, { 오늘: 0, 내일: 1, 모레: 2, 글피: 3 }[m[1]])); });
+  if (!date) take(/\s(다다음\s?주|다음\s?주|이번\s?주)\s?([일월화수목금토])(?:요일)?\s/, m => {
+    const weeks = m[1].startsWith('다다음') ? 2 : m[1].startsWith('다음') ? 1 : 0;
+    const monday = addDays(today, -((today.getDay() + 6) % 7));
+    date = iso(addDays(monday, weeks * 7 + (DOWS.indexOf(m[2]) + 6) % 7));
+  });
+  if (!date) take(/\s(\d{1,2})[/.](\d{1,2})\s/, m => { date = monthDay(+m[1], +m[2]); return date ? undefined : false; });
+  if (!date) take(/\s(\d{1,2})월\s?(\d{1,2})일\s/, m => { date = monthDay(+m[1], +m[2]); return date ? undefined : false; });
+  if (!date) take(/\s(\d{1,2})일\s/, m => {
+    const d = +m[1];
+    const y = today.getFullYear(), mo = today.getMonth() + 1;
+    const thisMonth = `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    if (iso(parseIso(thisMonth)) === thisMonth && thisMonth >= todayIso) { date = thisMonth; return; }
+    const next = addDays(parseIso(`${y}-${String(mo).padStart(2, '0')}-01`), 32);
+    const cand = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    if (iso(parseIso(cand)) !== cand) return false;
+    date = cand;
+  });
+  if (!date) take(/\s([일월화수목금토])(?:요일)?\s/, m => {
+    date = iso(addDays(today, (DOWS.indexOf(m[1]) - today.getDay() + 7) % 7));
+  });
+
+  take(/\s(?:(오전|오후|아침|낮|저녁|밤)\s?)?(\d{1,2})(?::(\d{2})|시(?:\s?(반|(\d{1,2})분))?)\s/, m => {
+    let h = +m[2];
+    const min = m[3] ? +m[3] : m[4] === '반' ? 30 : m[5] ? +m[5] : 0;
+    const ampm = m[1];
+    if (ampm === '오후' || ampm === '저녁' || ampm === '밤') { if (h < 12) h += 12; }
+    else if (ampm === '낮') { if (h <= 6) h += 12; }
+    else if (ampm === '오전' || ampm === '아침') { if (h === 12) h = 0; }
+    else if (!m[3] && h >= 1 && h <= 6) h += 12; // "3시" — 업무 일정은 오후로
+    if (h > 23 || min > 59) return false;
+    time = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+  });
+
+  return { title: s.replace(/\s+/g, ' ').trim(), date: date || todayIso, time };
+}
+
+// ---------- 준비 단계 묶음 ----------
+// 한 줄에 하나: "D-10 요청 메일" 또는 "10일 전 요청 메일". 형식이 다른 줄은 건너뛴다.
+export function parsePrepSteps(text) {
+  const out = [];
+  for (const line of String(text || '').split('\n')) {
+    const m = line.trim().match(/^(?:D-(\d{1,3})|(\d{1,3})일\s?전)\s+(.+)$/i);
+    if (m) out.push({ days: Number(m[1] || m[2]), name: m[3].trim() });
+  }
+  return out;
+}
+
+// 본 일정 날짜에서 거꾸로 센 준비 일정들. 제목은 "단계 · 본 일정".
+export function prepStepTasks(title, dateIso, steps) {
+  return steps.map(s => ({ title: `${s.name} · ${title}`, date: iso(addDays(parseIso(dateIso), -s.days)) }));
+}
+
+// ---------- 미리 보기 기한 ----------
+// 계약 갱신처럼 미리 챙길 기한. 기한까지 남은 날이 미리 보기 기간(leadDays) 안이면 D-n 으로 띄운다.
+// 3일 안은 "마감 임박" 이 맡으므로 여기서는 뺀다(같은 일을 두 번 보여주지 않게).
+export function upcomingDeadlines(tasks, todayIso) {
+  return tasks
+    .filter(t => !t.done && t.leadDays)
+    .map(t => ({ task: t, daysLeft: daysBetween(todayIso, dueDate(t)) }))
+    .filter(x => x.daysLeft > 3 && x.daysLeft <= x.task.leadDays)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+}
+
+// ---------- 회신 대기 ----------
+// 회신을 기다리는 일(waitingOn = 기다리는 곳). 회신 기한이 오늘이거나 지났으면 "재촉할 것".
+export function splitWaiting(tasks, todayIso) {
+  const w = tasks.filter(t => !t.done && t.waitingOn).sort((a, b) => dueDate(a).localeCompare(dueDate(b)));
+  return { waiting: w.filter(t => dueDate(t) > todayIso), nudge: w.filter(t => dueDate(t) <= todayIso) };
+}
