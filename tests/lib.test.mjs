@@ -670,3 +670,9 @@ test('splitWaiting: 회신 대기와 재촉할 것(마감이 오늘이거나 지
   assert.deepEqual(waiting.map(t => t.title), ['자료 회신']);
   assert.deepEqual(nudge.map(t => t.title), ['견적 회신', '오늘까지']);
 });
+
+test('prepStepTasks: 오늘보다 이른 준비 단계는 만들지 않는다 (만들자마자 "지난 일" 이 되니까)', () => {
+  const steps = [{ days: 10, name: '요청 메일' }, { days: 7, name: '자료 수집' }, { days: 3, name: '회의자료 작성' }];
+  assert.deepEqual(prepStepTasks('노사협의', '2026-09-29', steps, '2026-09-26').map(t => t.title), ['회의자료 작성 · 노사협의']);
+  assert.equal(prepStepTasks('노사협의', '2026-09-29', steps).length, 3); // 기준일을 안 주면 전부
+});
