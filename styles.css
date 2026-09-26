@@ -78,3 +78,20 @@ html.dark .alert.overdue-list{background:#3a1a1a;color:#ffb4a8}
 .od-when{opacity:.7;font-size:12px}
 .od-actions{display:flex;gap:2px;flex:none}
 .od-actions .text-button{padding:4px 8px;color:inherit;font-weight:700}
+/* 빠른 입력 한 줄 */
+.quick-add{display:flex;gap:8px;margin:0 0 10px}
+.quick-add input{flex:1;min-width:0;min-height:40px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#f7faf1;color:var(--ink);font-size:14px;outline:0}
+html.dark .quick-add input{background:#121712}
+.quick-add input:focus{border-color:var(--blue);background:var(--paper);box-shadow:0 0 0 3px rgba(47,122,61,.18)}
+.quick-add .tool{flex:none;min-width:44px;font-weight:800}
+/* 다가오는 기한 (미리 보기) */
+.alert.upcoming{background:#eef2fa;color:#2f4a6d}
+html.dark .alert.upcoming{background:#1c2536;color:#b9cdf0}
+.up-item{white-space:nowrap}
+/* 회신 대기 — 재촉할 것은 붉게 */
+.alert.waiting-list{display:grid;gap:4px;background:#f3f0fa;color:#4b3a78}
+html.dark .alert.waiting-list{background:#241f33;color:#cfc2f5}
+.alert.waiting-list .od-row.late{color:#b3261e}
+html.dark .alert.waiting-list .od-row.late{color:#ff8a80}
+.badge.waiting{background:#f3f0fa;color:#4b3a78}
+html.dark .badge.waiting{background:#241f33;color:#cfc2f5}

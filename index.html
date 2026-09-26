@@ -46,6 +46,7 @@
           <div><h2>오늘 해야 할 일</h2><span class="hint">급한 일부터 차분히 정리합니다.</span></div>
           <div class="hero-right"><button id="addTaskBtn" class="primary compact">＋ 추가</button><div class="summary"><div class="stat"><b id="openCount">0</b><span>남은 업무</span></div><div class="stat"><b id="doneCount">0</b><span>완료</span></div></div></div>
         </div>
+        <form id="quickAdd" class="quick-add" autocomplete="off"><input id="quickInput" placeholder="빠른 입력 — 예: 다음주 화 3시 노사협의" aria-label="빠른 입력"><button type="submit" class="tool">＋</button></form>
         <div id="dueAlerts" class="alerts"></div>
         <div id="todayTasks" class="tasks"></div>
       </article>
@@ -121,6 +122,14 @@
             <span class="hint">알림</span>
             <label class="check-field"><input id="remind1h" type="checkbox"> 1시간 전</label>
             <label class="check-field"><input id="remind1d" type="checkbox"> 하루 전</label>
+          </div>
+          <div class="form-row">
+            <select id="leadDays" aria-label="미리 보기"><option value="">미리 보기 없음</option><option value="7">7일 전부터 미리 보기</option><option value="14">14일 전부터 미리 보기</option><option value="30">30일 전부터 미리 보기</option></select>
+            <input id="waitingOn" maxlength="60" placeholder="회신 기다리는 곳 (선택)">
+          </div>
+          <div id="prepBlock">
+            <label class="check-field"><input id="prepOn" type="checkbox"> 준비 단계 같이 만들기 <span class="hint">(날짜보다 앞서 할 일)</span></label>
+            <textarea id="prepSteps" rows="3" maxlength="1000" hidden placeholder="D-10 요청 메일&#10;D-7 자료 수집&#10;D-3 회의자료 작성"></textarea>
           </div>
           <label id="shareFamilyRow" class="check-field" hidden><input id="shareFamily" type="checkbox"> 가족과 공유</label>
           <textarea id="note" maxlength="1000" placeholder="메모 (선택)"></textarea>

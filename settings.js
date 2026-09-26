@@ -2,11 +2,11 @@ import { sb } from './supabase.js';
 import { state } from './state.js';
 import { normalizeWatchlist, rpcErrorMessage, iosWidgetScript, calendarUrls } from './lib.js';
 
-function defaults() { return { showMarket: false, showNotes: false, watchlist: normalizeWatchlist(null), watchlistCustom: false }; }
+function defaults() { return { showMarket: false, showNotes: false, watchlist: normalizeWatchlist(null), watchlistCustom: false, prepSteps: null }; }
 
 // 계정별 설정. 행이 없거나 조회 실패면 기본값(시세·투자·노트 모두 숨김, 관심 목록은 기본 7종).
 export async function loadSettings() {
-  const { data, error } = await sb.from('work_settings').select('show_market,show_notes,market_symbols').eq('user_id', state.user.id).maybeSingle();
+  const { data, error } = await sb.from('work_settings').select('show_market,show_notes,market_symbols,prep_steps').eq('user_id', state.user.id).maybeSingle();
   if (error) { state.settings = defaults(); return error; }
   const custom = Array.isArray(data?.market_symbols) && data.market_symbols.length > 0;
   state.settings = {
@@ -14,8 +14,18 @@ export async function loadSettings() {
     showNotes: !!data?.show_notes,
     watchlist: normalizeWatchlist(data?.market_symbols),
     watchlistCustom: custom,
+    prepSteps: data?.prep_steps || null,
   };
   return null;
+}
+
+// 준비 단계 템플릿 — 마지막에 쓴 것을 기억해 다음 일정 추가 때 채운다.
+export async function setPrepSteps(text) {
+  const value = String(text || '').trim().slice(0, 1000) || null;
+  const { error } = await sb.from('work_settings')
+    .upsert({ user_id: state.user.id, prep_steps: value, updated_at: new Date().toISOString() });
+  if (!error) state.settings.prepSteps = value;
+  return error || null;
 }
 
 // upsert는 merge-duplicates라 보내지 않은 컬럼은 기존 값을 유지한다 — 각 함수는 자기 컬럼만 보낸다.
